@@ -88,6 +88,7 @@ DATABASES = {
     }
 }
 
+DATABASE_ROUTERS = ["django_omnitenant.routers.TenantRouter"]
 
 
 # Password validation
