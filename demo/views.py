@@ -1,8 +1,17 @@
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
-from .models import Patient
+from .models import Patient, Hospital
 
+
+@api_view(["GET"])
+def hospitals_view(request):
+    """
+    A simple API view that returns a list of hospitals.
+    """
+    hospitals = Hospital.objects.all()
+    hospitals = [{"id": hospital.pk, "name": hospital.name} for hospital in hospitals]
+    return Response(hospitals, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])
@@ -22,7 +31,11 @@ def create_patient_view(request):
     """
     name = request.data.get("name")
     if not name:
-        return Response({"error": "Name is required"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"error": "Name is required"}, status=status.HTTP_400_BAD_REQUEST
+        )
 
     patient = Patient.objects.create(name=name)
-    return Response({"id": patient.pk, "name": patient.name}, status=status.HTTP_201_CREATED)
+    return Response(
+        {"id": patient.pk, "name": patient.name}, status=status.HTTP_201_CREATED
+    )

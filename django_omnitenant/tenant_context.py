@@ -1,6 +1,7 @@
 from contextvars import ContextVar
 from contextlib import contextmanager
 from django_omnitenant.constants import constants
+from django_omnitenant.models import BaseTenant
 
 
 class TenantContext:
@@ -31,7 +32,7 @@ class TenantContext:
 
     @classmethod
     def clear_db_alias(cls):
-        cls._current_tenant_db_alias.set(None)
+        cls._current_tenant_db_alias.set(constants.DEFAULT_DB_ALIAS)
 
     @classmethod
     def clear_all(cls):
@@ -40,17 +41,27 @@ class TenantContext:
 
     @classmethod
     @contextmanager
-    def use(cls, tenant=None, db_alias=None):
-        # Save previous state
-        token_tenant = cls._current_tenant.set(tenant) if tenant is not None else None
-        token_db = (
-            cls._current_tenant_db_alias.set(db_alias) if db_alias is not None else None
+    def use(cls, tenant):
+        from django_omnitenant.backends.database_backend import DatabaseTenantBackend
+        from django_omnitenant.backends.schema_backend import SchemaTenantBackend
+
+        """Activate a tenant context (schema or DB) for the duration of the context."""
+        # Save previous tenant
+        prev_token_tenant = cls._current_tenant.get()
+        token_tenant = cls._current_tenant.set(tenant)
+
+        # Activate backend
+        backend = (
+            SchemaTenantBackend(tenant)
+            if tenant.isolation_type == BaseTenant.IsolationType.SCHEMA
+            else DatabaseTenantBackend(tenant)
         )
+        backend.activate()
+
         try:
             yield
         finally:
-            # Restore old state if changed
-            if token_tenant is not None:
-                cls._current_tenant.reset(token_tenant)
-            if token_db is not None:
-                cls._current_tenant_db_alias.reset(token_db)
+            # Deactivate backend and restore previous tenant
+            backend.deactivate()
+            cls._current_tenant.reset(token_tenant)
+            cls._current_tenant.set(prev_token_tenant)

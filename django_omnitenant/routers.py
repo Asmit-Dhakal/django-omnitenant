@@ -15,22 +15,28 @@ class TenantRouter:
     def _is_tenant_managed_model(self, model):
         if model._meta.app_label not in get_custom_apps():
             return True  # treat non-custom apps as tenant-managed by default
-        
+
         # 1. Check AppConfig
         app_config = apps.get_app_config(model._meta.app_label)
         if hasattr(app_config, "tenant_managed"):
             return getattr(app_config, "tenant_managed", True)
-        
-        # 2. Check Model 
+
+        # 2. Check Model
         return getattr(model, "tenant_managed", True)
 
+    def _is_global_model(self, model):
+        return (
+            getattr(model, "globally_managed", False) is True
+            and model._meta.app_label in get_custom_apps()
+        )
+
     def db_for_read(self, model, **hints):
-        if not self._is_tenant_managed_model(model):
+        if self._is_global_model(model):
             return constants.DEFAULT_DB_ALIAS
         return TenantContext.get_db_alias()
 
     def db_for_write(self, model, **hints):
-        if not self._is_tenant_managed_model(model):
+        if self._is_global_model(model):
             return constants.DEFAULT_DB_ALIAS
         return TenantContext.get_db_alias()
 
@@ -61,7 +67,9 @@ class TenantRouter:
 
         # Get the current tenant context
         tenant: BaseTenant = TenantContext.get_tenant()  # type: ignore
-        is_schema_tenant = tenant and tenant.isolation_type == BaseTenant.IsolationType.SCHEMA
+        is_schema_tenant = (
+            tenant and tenant.isolation_type == BaseTenant.IsolationType.SCHEMA
+        )
 
         # Attempt to get the current schema from the database
         try:
@@ -90,10 +98,19 @@ class TenantRouter:
         if is_tenant_managed:
             if is_schema_tenant:
                 # Schema-managed tenant: migrate to tenant schema on default DB
-                return db == constants.DEFAULT_DB_ALIAS and selected_schema != settings.PUBLIC_SCHEMA_NAME
+                return (
+                    db == constants.DEFAULT_DB_ALIAS
+                    and selected_schema != settings.PUBLIC_SCHEMA_NAME
+                )
             else:
                 # DB-managed tenant: migrate to tenant DB (non-default)
-                return db != constants.DEFAULT_DB_ALIAS and selected_schema == settings.PUBLIC_SCHEMA_NAME
+                return (
+                    db != constants.DEFAULT_DB_ALIAS
+                    and selected_schema == settings.PUBLIC_SCHEMA_NAME
+                )
 
         # Non-tenant-managed logic: migrate only to default DB/public schema
-        return db == constants.DEFAULT_DB_ALIAS and selected_schema == settings.PUBLIC_SCHEMA_NAME
+        return (
+            db == constants.DEFAULT_DB_ALIAS
+            and selected_schema == settings.PUBLIC_SCHEMA_NAME
+        )

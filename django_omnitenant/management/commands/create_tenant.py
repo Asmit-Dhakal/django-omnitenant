@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django_omnitenant.models import BaseTenant
 from django_omnitenant.utils import get_tenant_model
-from django.core.management import call_command
+from .migrate_tenant import Command as MigrateTenantCommand
 
 try:
     from django.db.backends.postgresql.psycopg_any import is_psycopg3
@@ -137,7 +137,7 @@ class Command(BaseCommand):
     def _run_migrations_for_tenant(self, tenant_id):
         """Run migrations for the newly created tenant using custom migrate_tenant command."""
         try:
-            call_command("migrate_tenant", tenant_id=tenant_id)
+            MigrateTenantCommand().handle(tenant_id=tenant_id)
             self.stdout.write(
                 self.style.SUCCESS(
                     f"Migrations completed successfully for tenant '{tenant_id}'."

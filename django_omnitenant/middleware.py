@@ -1,14 +1,14 @@
 from typing import Callable
+
 from django.http import HttpRequest, HttpResponse
+from django.shortcuts import redirect
 from django.utils.deprecation import MiddlewareMixin
-from django.db.models.base import Model
 from importlib import import_module
+
+from django_omnitenant.exceptions import TenantNotFound
 from .tenant_context import TenantContext
 from .conf import settings
 from .models import BaseTenant
-
-
-from .backends import BaseTenantBackend, SchemaTenantBackend, DatabaseTenantBackend
 
 
 class TenantMiddleware(MiddlewareMixin):
@@ -29,24 +29,19 @@ class TenantMiddleware(MiddlewareMixin):
         super().__init__(get_response)
 
     def __call__(self, request):
-        tenant: BaseTenant | None = self.resolver.resolve(request)
+        try:
+            tenant: BaseTenant = self.resolver.resolve(request)
+        except TenantNotFound:
+            host = request.get_host()
+            parts = host.split(".")
+            if len(parts) > 2:
+                base_domain = ".".join(parts[1:])
+            else:
+                base_domain = host
+            return redirect(f"{request.scheme}://{base_domain}")
 
-        if tenant:
-            TenantContext.set_tenant(tenant)
+        with TenantContext.use(tenant):
             request.tenant = tenant
+            response = self.get_response(request)
 
-            backend: BaseTenantBackend = (
-                SchemaTenantBackend(tenant)
-                if tenant.isolation_type == BaseTenant.IsolationType.SCHEMA
-                else DatabaseTenantBackend(tenant)
-            )
-            backend.activate()
-        #TODO: else: Set default tenant so request.tenant gives a default tenant 
-
-
-        response = self.get_response(request)
-
-        if tenant:
-            backend.deactivate()
-            TenantContext.clear_tenant()
         return response
