@@ -29,7 +29,7 @@ class Command(BaseCommand):
         TenantContext.set_tenant(tenant)
         backend = (
             SchemaTenantBackend(tenant)
-            if tenant.isolation_type == BaseTenant.BackendType.SCHEMA
+            if tenant.isolation_type == BaseTenant.IsolationType.SCHEMA
             else DatabaseTenantBackend(tenant)
         )
         backend.activate()

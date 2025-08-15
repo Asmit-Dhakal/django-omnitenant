@@ -3,7 +3,7 @@ from .validators import validate_dns_label
 
 
 class BaseTenant(models.Model):
-    class BackendType(models.TextChoices):
+    class IsolationType(models.TextChoices):
         SCHEMA = "SCH", "Schema"
         DATABASE = "DB", "Database"
         # HYBRID = "HYB", "Hybrid"
@@ -14,7 +14,7 @@ class BaseTenant(models.Model):
         validators=[validate_dns_label],
         help_text="Must be a valid DNS label (RFC 1034/1035).",
     )
-    isolation_type = models.CharField(max_length=3, choices=BackendType.choices)
+    isolation_type = models.CharField(max_length=3, choices=IsolationType.choices)
     config = models.JSONField(
         default=dict,
         blank=True,

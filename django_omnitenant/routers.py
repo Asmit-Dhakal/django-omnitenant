@@ -61,7 +61,7 @@ class TenantRouter:
 
         # Get the current tenant context
         tenant: BaseTenant = TenantContext.get_tenant()  # type: ignore
-        is_schema_tenant = tenant and tenant.isolation_type == BaseTenant.BackendType.SCHEMA
+        is_schema_tenant = tenant and tenant.isolation_type == BaseTenant.IsolationType.SCHEMA
 
         # Attempt to get the current schema from the database
         try:
