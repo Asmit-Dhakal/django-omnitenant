@@ -1,57 +1,99 @@
 from django.apps import apps
-from django.conf import settings
+
+from django_omnitenant.models import BaseTenant
 from .tenant_context import TenantContext
 from .constants import constants
+from .conf import settings
+
 from .utils import get_custom_apps
 
+
+from django.db import connection
+
+
 class TenantRouter:
-    def _is_tenant_model(self, model):
-        # Only apply tenant logic for custom apps
+    def _is_tenant_managed_model(self, model):
         if model._meta.app_label not in get_custom_apps():
             return True  # treat non-custom apps as tenant-managed by default
-
+        
         # 1. Check AppConfig
         app_config = apps.get_app_config(model._meta.app_label)
         if hasattr(app_config, "tenant_managed"):
             return getattr(app_config, "tenant_managed", True)
-
+        
         # 2. Check Model 
         return getattr(model, "tenant_managed", True)
 
     def db_for_read(self, model, **hints):
-        if not self._is_tenant_model(model):
+        if not self._is_tenant_managed_model(model):
             return constants.DEFAULT_DB_ALIAS
-        return TenantContext.get_db_alias() or constants.DEFAULT_DB_ALIAS
+        return TenantContext.get_db_alias()
 
     def db_for_write(self, model, **hints):
-        if not self._is_tenant_model(model):
+        if not self._is_tenant_managed_model(model):
             return constants.DEFAULT_DB_ALIAS
-        return TenantContext.get_db_alias() or constants.DEFAULT_DB_ALIAS
+        return TenantContext.get_db_alias()
 
     def allow_relation(self, obj1, obj2, **hints):
         return len({self.db_for_read(obj1), self.db_for_read(obj2)}) == 1
 
     def allow_migrate(self, db, app_label, model_name=None, **hints):
-        # Only apply tenant logic for custom apps
-        if app_label not in get_custom_apps():
-            return True  # allow migrations for non-custom apps everywhere
+        """
+        Determine if migrations for a given app/model should be applied to the specified database.
 
+        This method is tenant-aware and schema-aware. It ensures that:
+            - Non-custom apps are always migrated.
+            - Tenant-managed apps/models are migrated either to the tenant's DB or tenant schema.
+            - Non-tenant-managed apps/models are migrated only to the default DB / public schema.
+
+        Args:
+            db (str): The database alias being considered for migration.
+            app_label (str): The Django app label of the model/app being migrated.
+            model_name (str, optional): Specific model name being migrated.
+            **hints: Additional migration hints (not used here).
+
+        Returns:
+            bool: True if migration should be applied to the given DB/schema, False otherwise.
+        """
+        # Allow migrations for apps not considered "custom"
+        if app_label not in get_custom_apps():
+            return True
+
+        # Get the current tenant context
+        tenant: BaseTenant = TenantContext.get_tenant()  # type: ignore
+        is_schema_tenant = tenant and tenant.isolation_type == BaseTenant.BackendType.SCHEMA
+
+        # Attempt to get the current schema from the database
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_schema();")
+                selected_schema = cursor.fetchone()[0]  # type: ignore
+        except Exception:
+            # If schema detection fails, mark as unknown
+            selected_schema = "unknown"
+
+        # Determine if the migration is for a tenant-managed app/model
         if not model_name:
             try:
                 app_config = apps.get_app_config(app_label)
             except LookupError:
                 return None
-            if hasattr(app_config, "tenant_managed") and not getattr(
-                app_config, "tenant_managed", True
-            ):
-                return db == constants.DEFAULT_DB_ALIAS
-            return db != constants.DEFAULT_DB_ALIAS
+            is_tenant_managed = getattr(app_config, "tenant_managed", True)
+        else:
+            try:
+                model = apps.get_model(app_label, model_name)
+            except LookupError:
+                return None
+            is_tenant_managed = self._is_tenant_managed_model(model)
 
-        try:
-            model = apps.get_model(app_label, model_name)
-        except LookupError:
-            return None
+        # Tenant-managed logic
+        if is_tenant_managed:
+            if is_schema_tenant:
+                # Schema-managed tenant: migrate to tenant schema on default DB
+                return db == constants.DEFAULT_DB_ALIAS and selected_schema != settings.PUBLIC_SCHEMA_NAME
+            else:
+                # DB-managed tenant: migrate to tenant DB (non-default)
+                return db != constants.DEFAULT_DB_ALIAS and selected_schema == settings.PUBLIC_SCHEMA_NAME
 
-        if not self._is_tenant_model(model):
-            return db == constants.DEFAULT_DB_ALIAS
-        return db != constants.DEFAULT_DB_ALIAS
+        # Non-tenant-managed logic: migrate only to default DB/public schema
+        return db == constants.DEFAULT_DB_ALIAS and selected_schema == settings.PUBLIC_SCHEMA_NAME

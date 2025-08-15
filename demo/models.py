@@ -4,9 +4,11 @@ from django_omnitenant.models import BaseTenant
 
 
 class Hospital(BaseTenant):
+    tenant_managed = False
 
     def __str__(self) -> str:
         return self.name
+    
 
 class Patient(models.Model):
     name = models.CharField(max_length=100)

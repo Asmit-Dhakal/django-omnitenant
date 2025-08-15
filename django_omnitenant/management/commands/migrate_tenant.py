@@ -24,12 +24,12 @@ class Command(BaseCommand):
         try:
             tenant: BaseTenant = Tenant.objects.get(tenant_id=tenant_id) # type: ignore
         except Tenant.DoesNotExist:
-            raise CommandError(f"Tenant '{tenant_id}' does not exist")
+            raise CommandError(f"Tenant '{tenant_id}' does not exist. Please create one with the tenant id '{tenant_id}' first.")
 
         TenantContext.set_tenant(tenant)
         backend = (
             SchemaTenantBackend(tenant)
-            if tenant.backend_type == BaseTenant.BackendType.SCHEMA
+            if tenant.isolation_type == BaseTenant.BackendType.SCHEMA
             else DatabaseTenantBackend(tenant)
         )
         backend.activate()

@@ -10,8 +10,8 @@ def patients_view(request):
     """
     A simple API view that returns a list of patients.
     """
-    Patients = Patient.objects.all()
-    patients = [{"id": patient.pk, "name": patient.name} for patient in Patients]
+    patients = Patient.objects.all()
+    patients = [{"id": patient.pk, "name": patient.name} for patient in patients]
     return Response(patients, status=status.HTTP_200_OK)
 
 

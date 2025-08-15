@@ -37,7 +37,7 @@ class TenantMiddleware(MiddlewareMixin):
 
             backend: BaseTenantBackend = (
                 SchemaTenantBackend(tenant)
-                if tenant.backend_type == BaseTenant.BackendType.SCHEMA
+                if tenant.isolation_type == BaseTenant.BackendType.SCHEMA
                 else DatabaseTenantBackend(tenant)
             )
             backend.activate()
