@@ -1,11 +1,10 @@
 from typing import Callable
 
-from django.http import HttpRequest, HttpResponse
-from django.shortcuts import redirect
+from django.http import HttpRequest, HttpResponse, HttpResponseNotFound, JsonResponse
 from django.utils.deprecation import MiddlewareMixin
 from importlib import import_module
 
-from django_omnitenant.exceptions import TenantNotFound
+from django_omnitenant.exceptions import DomainNotFound, TenantNotFound
 from .tenant_context import TenantContext
 from .conf import settings
 from .models import BaseTenant
@@ -31,14 +30,9 @@ class TenantMiddleware(MiddlewareMixin):
     def __call__(self, request):
         try:
             tenant: BaseTenant = self.resolver.resolve(request)
-        except TenantNotFound:
-            host = request.get_host()
-            parts = host.split(".")
-            if len(parts) > 2:
-                base_domain = ".".join(parts[1:])
-            else:
-                base_domain = host
-            return redirect(f"{request.scheme}://{base_domain}")
+        except (DomainNotFound, TenantNotFound):
+            # return HttpResponseNotFound()
+            return JsonResponse({"detail": "Invalid Domain"}, status=404)
 
         with TenantContext.use(tenant):
             request.tenant = tenant

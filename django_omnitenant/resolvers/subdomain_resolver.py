@@ -5,9 +5,9 @@ from .base import BaseTenantResolver
 
 class SubdomainTenantResolver(BaseTenantResolver):
     def resolve(self, request) -> object | None:
-        host = request.get_host().split(".")[0]
+        subdomain = request.get_host().split(".")[0]
         Tenant = get_tenant_model()
         try:
-            return Tenant.objects.get(tenant_id=host)
+            return Tenant.objects.get(tenant_id=subdomain)
         except Tenant.DoesNotExist:
             raise TenantNotFound

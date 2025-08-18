@@ -2,6 +2,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
 from .models import Patient, Hospital
+from .tasks import create_patient
 
 
 @api_view(["GET"])
@@ -38,4 +39,22 @@ def create_patient_view(request):
     patient = Patient.objects.create(name=name)
     return Response(
         {"id": patient.pk, "name": patient.name}, status=status.HTTP_201_CREATED
+    )
+
+
+@api_view(["POST"])
+def create_patient_async_view(request):
+    """
+    A simple API view that creates a new patient with the use of background workers.
+    """
+    name = request.data.get("name")
+    if not name:
+        return Response(
+            {"error": "Name is required"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # create_patient.delay(name, tenant_id=request.tenant.tenant_id)
+    create_patient.apply_async(kwargs={"name": name}, tenant_id=request.tenant.tenant_id) 
+    return Response(
+        {"detail": "Patient has been created successfully"}, status=status.HTTP_200_OK
     )

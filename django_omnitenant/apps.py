@@ -30,5 +30,11 @@ class DjangoOmnitenantConfig(AppConfig):
             raise ImproperlyConfigured(
                 f"{tenant_model_path} is not a valid Django model."
             ) 
+        # TODO: If default db engine is django.db.backends.postgresql.base then change it to django_omnitenant.backends.postgresql
+
         
-    # TODO: If default db engine is django.db.backends.postgresql.base then change it to django_omnitenant.backends.postgresql
+        # Patch Celery tasks to be tenant-aware
+        print("Patching Celery tasks to be tenant-aware...")
+        from .patches.celery import patch_celery
+        patch_celery()
+        

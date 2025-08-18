@@ -1,5 +1,6 @@
 from django.db import models
 from .validators import validate_dns_label
+from .conf import settings
 
 
 class BaseTenant(models.Model):
@@ -24,3 +25,20 @@ class BaseTenant(models.Model):
 
     class Meta:
         abstract = True
+
+
+class BaseDomain(models.Model):
+    tenant = models.OneToOneField(
+        settings.TENANT_MODEL,
+        on_delete=models.CASCADE,
+        help_text="The tenant this domain belongs to.",
+    )
+    domain = models.SlugField(
+        unique=True,
+        validators=[validate_dns_label],
+        help_text="Must be a valid DNS label (RFC 1034/1035).",
+    )
+
+    class Meta:
+        abstract = True
+        unique_together = ("tenant", "domain")

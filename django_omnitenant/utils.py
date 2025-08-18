@@ -5,7 +5,10 @@ from django.db.models.base import Model
 
 
 def get_tenant_model() -> type[Model]:
-    return apps.get_model(settings.OMNITENANT_CONFIG.get(constants.TENANT_MODEL))  # type: ignore
+    return apps.get_model(settings.TENANT_MODEL)
+
+def get_domain_model() -> type[Model]:
+    return apps.get_model(settings.DOMAIN_MODEL) 
 
 
 def get_custom_apps() -> list[str]:
