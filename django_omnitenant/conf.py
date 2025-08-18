@@ -56,6 +56,13 @@ class _WrappedSettings:
                 "You must define DOMAIN_MODEL in your Omnitenant configuration."
             )
         return domain_model
+    @cached_property
+    def DEFAULT_HOST(self) -> str:
+        """
+        Returns the default host for the tenant.
+        This is used when no specific tenant is resolved.
+        """
+        return self.OMNITENANT_CONFIG.get(constants.DEFAULT_HOST, "localhost")
 
 
 settings = _WrappedSettings()

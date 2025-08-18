@@ -1,14 +1,16 @@
 from django.apps import apps
 from .conf import settings
-from .constants import constants
 from django.db.models.base import Model
+from django.db import connections
+from django.core.cache import caches
 
 
 def get_tenant_model() -> type[Model]:
     return apps.get_model(settings.TENANT_MODEL)
 
+
 def get_domain_model() -> type[Model]:
-    return apps.get_model(settings.DOMAIN_MODEL) 
+    return apps.get_model(settings.DOMAIN_MODEL)
 
 
 def get_custom_apps() -> list[str]:
@@ -26,3 +28,49 @@ def get_custom_apps() -> list[str]:
             custom_apps.append(app_config.name)
 
     return custom_apps
+
+
+def reset_db_connection(alias: str):
+    """
+    Close and evict a DB connection so the next access uses the updated
+    settings.DATABASES[alias].
+    """
+    if alias in connections:
+        try:
+            connections[alias].close()
+        except Exception:
+            pass
+
+        try:
+            del connections._connections.connections[alias]  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    # Force re-initialization on demand
+    return connections[alias]
+
+
+def reset_cache_connection(alias: str):
+    """
+    Close and evict a cache client so the next access uses the updated
+    settings.CACHES[alias].
+    """
+    # Best effort: if a backend exists already, close it.
+    try:
+        backend = caches._caches.caches.get(alias)  # type: ignore[attr-defined]
+        if backend and hasattr(backend, "close"):
+            try:
+                backend.close()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # Evict the cached backend so it will be rebuilt on next access
+    try:
+        caches._caches.caches.pop(alias, None)  # type: ignore[attr-defined]
+    except Exception:
+        pass
+
+    # Force re-initialization on demand
+    return caches[alias]

@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from .models import Patient, Hospital
 from .tasks import create_patient
+from django.core.cache import cache
 
 
 @api_view(["GET"])
@@ -20,7 +21,11 @@ def patients_view(request):
     """
     A simple API view that returns a list of patients.
     """
+    result = cache.get("patients")
+    if result is not None:
+        return Response([{"id": patient.pk, "name": patient.name} for patient in result], status=status.HTTP_200_OK)
     patients = Patient.objects.all()
+    cache.set("patients", patients)
     patients = [{"id": patient.pk, "name": patient.name} for patient in patients]
     return Response(patients, status=status.HTTP_200_OK)
 

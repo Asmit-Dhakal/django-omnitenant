@@ -1,6 +1,7 @@
 from django.db import models
 from .validators import validate_dns_label
 from .conf import settings
+from .utils import reset_db_connection, reset_cache_connection
 
 
 class BaseTenant(models.Model):
@@ -25,6 +26,34 @@ class BaseTenant(models.Model):
 
     class Meta:
         abstract = True
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            old = type(self).objects.get(pk=self.pk)
+            changed_fields = [
+                f.name for f in self._meta.fields
+                if getattr(old, f.name) != getattr(self, f.name)
+            ]
+        else:
+            changed_fields = []
+
+        super().save(*args, **kwargs)
+
+        if any(field in changed_fields for field in ["config", "isolation_type"]):
+            if self.isolation_type == self.IsolationType.DATABASE:
+                from django_omnitenant.backends.database_backend import DatabaseTenantBackend
+                alias, config = DatabaseTenantBackend.get_alias_and_config(self)
+                settings.DATABASES[alias] = config
+                reset_db_connection(alias)
+
+            from django_omnitenant.backends.cache_backend import CacheTenantBackend
+            alias, config = CacheTenantBackend.get_alias_and_config(self)
+            settings.CACHES[alias] = config
+            reset_cache_connection(alias)
+
+            
+
+
 
 
 class BaseDomain(models.Model):

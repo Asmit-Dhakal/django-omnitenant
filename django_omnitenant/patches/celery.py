@@ -54,7 +54,4 @@ class TenantAwareTask(Task):
         return super().__call__(*args, **kwargs)
 
 
-
-def patch_celery():
-    """Monkeypatch Celery so all tasks use TenantAwareTask automatically."""
-    Celery.Task = TenantAwareTask
+Celery.Task = TenantAwareTask

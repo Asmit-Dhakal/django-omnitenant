@@ -29,7 +29,19 @@ class _Constants:
 
     @cached_property
     def PUBLIC_SCHEMA_NAME(self) -> str:
-        return "'PUBLIC_SCHEMA_NAME'"
+        return "PUBLIC_SCHEMA_NAME"
+    
+    @cached_property
+    def DEFAULT_CACHE_ALIAS(self) -> str:
+        return "default"
+    
+    @cached_property
+    def DEFAULT_HOST(self) -> str:
+        return "DEFAULT_HOST"
+    
+    @cached_property
+    def PATCHES(self) -> str:
+        return "PATCHES"
 
 
 constants = _Constants()
