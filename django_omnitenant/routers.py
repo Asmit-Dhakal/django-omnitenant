@@ -32,13 +32,17 @@ class TenantRouter:
 
     def db_for_read(self, model, **hints):
         if self._is_global_model(model):
-            return constants.DEFAULT_DB_ALIAS
-        return TenantContext.get_db_alias()
+            return constants.GLOBAL_DB_ALIAS
+        elif self._is_tenant_managed_model(model):
+            return TenantContext.get_db_alias()
+        return constants.DEFAULT_DB_ALIAS  # If not globally managed or tenant-managed then it must be a default DB or public schema model
 
     def db_for_write(self, model, **hints):
         if self._is_global_model(model):
-            return constants.DEFAULT_DB_ALIAS
-        return TenantContext.get_db_alias()
+            return constants.GLOBAL_DB_ALIAS
+        elif self._is_tenant_managed_model(model):
+            return TenantContext.get_db_alias()
+        return constants.DEFAULT_DB_ALIAS
 
     def allow_relation(self, obj1, obj2, **hints):
         return len({self.db_for_read(obj1), self.db_for_read(obj2)}) == 1
@@ -94,7 +98,12 @@ class TenantRouter:
                 return None
             is_tenant_managed = self._is_tenant_managed_model(model)
 
-        # Tenant-managed logic
+        if self._is_global_model(model):
+            return (
+                db == constants.GLOBAL_DB_ALIAS
+                and selected_schema == settings.PUBLIC_SCHEMA_NAME
+            )
+
         if is_tenant_managed:
             if is_schema_tenant:
                 # Schema-managed tenant: migrate to tenant schema on default DB

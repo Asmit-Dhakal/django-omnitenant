@@ -48,7 +48,7 @@ class TenantAwareTask(Task):
         if tenant_id:
             Tenant = get_tenant_model()
             tenant = Tenant.objects.get(tenant_id=tenant_id)
-            with TenantContext.use(tenant):
+            with TenantContext.use_tenant(tenant):
                 return super().__call__(*args, **kwargs)
 
         return super().__call__(*args, **kwargs)

@@ -25,7 +25,9 @@ class DatabaseTenantBackend(BaseTenantBackend):
             or constants.DEFAULT_DB_ALIAS
         )
 
-        base_config: dict = settings.DATABASES.get(constants.DEFAULT_DB_ALIAS, {}).copy()
+        base_config: dict = settings.DATABASES.get(
+            constants.DEFAULT_DB_ALIAS, {}
+        ).copy()
 
         resolved_config = {
             "ENGINE": db_config.get("ENGINE")
@@ -50,6 +52,9 @@ class DatabaseTenantBackend(BaseTenantBackend):
             "CONN_HEALTH_CHECKS": db_config.get("CONN_HEALTH_CHECKS")
             if "CONN_HEALTH_CHECKS" in db_config
             else base_config.get("CONN_HEALTH_CHECKS", False),
+            "TEST": db_config.get("TEST")
+            if "TEST" in db_config
+            else base_config.get("TEST", {}),
         }
 
         return db_alias, resolved_config
@@ -63,7 +68,7 @@ class DatabaseTenantBackend(BaseTenantBackend):
         db_alias = self.db_config.get("ALIAS") or self.db_config.get("NAME")
         if db_alias not in settings.DATABASES:
             self.bind()
-        TenantContext.set_db_alias(db_alias)
+        TenantContext.push_db_alias(db_alias)
 
     def deactivate(self):
-        TenantContext.clear_db_alias()
+        TenantContext.pop_db_alias()

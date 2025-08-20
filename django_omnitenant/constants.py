@@ -22,6 +22,10 @@ class _Constants:
     @cached_property
     def DEFAULT_DB_ALIAS(self) -> str:
         return "default"
+    
+    @cached_property
+    def GLOBAL_DB_ALIAS(self) -> str:
+        return "default"
 
     @cached_property
     def SCHEMA_CONFIG(self) -> str:

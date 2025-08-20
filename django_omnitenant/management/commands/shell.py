@@ -22,7 +22,7 @@ class Command(ShellCommand):
                     self.style.ERROR(f"Tenant with ID '{tenant_id}' does not exist.")
                 )
                 return
-            with TenantContext.use(tenant):
+            with TenantContext.use_tenant(tenant):
                 self.stdout.write(
                     self.style.SUCCESS(f"Tenant '{tenant_id}' activated.")
                 )

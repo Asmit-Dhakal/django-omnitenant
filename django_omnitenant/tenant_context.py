@@ -2,75 +2,90 @@ from contextvars import ContextVar
 from contextlib import contextmanager
 from django_omnitenant.constants import constants
 from django_omnitenant.models import BaseTenant
+from django_omnitenant.utils import get_tenant_model
 
 
 class TenantContext:
-    _current_tenant = ContextVar("current_tenant", default=None)
-    _current_tenant_db_alias = ContextVar(
-        "current_tenant_db_alias", default=constants.DEFAULT_DB_ALIAS
-    )
-    _current_tenant_cache_alias = ContextVar(
-        "current_tenant_cache_alias", default="default"
+    _tenant_stack = ContextVar("tenant_stack", default=[])
+    _db_alias_stack = ContextVar("db_alias_stack", default=[constants.DEFAULT_DB_ALIAS])
+    _cache_alias_stack = ContextVar(
+        "cache_alias_stack", default=[constants.DEFAULT_CACHE_ALIAS]
     )
 
     # --- Tenant ---
     @classmethod
     def get_tenant(cls):
-        return cls._current_tenant.get()
+        stack = cls._tenant_stack.get()
+        return stack[-1] if stack else None
 
     @classmethod
-    def set_tenant(cls, tenant):
-        cls._current_tenant.set(tenant)
+    def push_tenant(cls, tenant):
+        stack = cls._tenant_stack.get()
+        new_stack = stack + [tenant]
+        cls._tenant_stack.set(new_stack)
 
     @classmethod
-    def clear_tenant(cls):
-        cls._current_tenant.set(None)
+    def pop_tenant(cls):
+        stack = cls._tenant_stack.get()
+        if stack:
+            new_stack = stack[:-1]
+            cls._tenant_stack.set(new_stack)
 
     # --- Database ---
     @classmethod
     def get_db_alias(cls):
-        return cls._current_tenant_db_alias.get()
+        stack = cls._db_alias_stack.get()
+        return stack[-1] if stack else constants.DEFAULT_DB_ALIAS
 
     @classmethod
-    def set_db_alias(cls, db_alias):
-        cls._current_tenant_db_alias.set(db_alias)
+    def push_db_alias(cls, db_alias):
+        stack = cls._db_alias_stack.get()
+        new_stack = stack + [db_alias]
+        cls._db_alias_stack.set(new_stack)
 
     @classmethod
-    def clear_db_alias(cls):
-        cls._current_tenant_db_alias.set(constants.DEFAULT_DB_ALIAS)
+    def pop_db_alias(cls):
+        stack = cls._db_alias_stack.get()
+        if stack:
+            new_stack = stack[:-1]
+            cls._db_alias_stack.set(new_stack)
 
     # --- Cache ---
     @classmethod
     def get_cache_alias(cls):
-        return cls._current_tenant_cache_alias.get()
+        stack = cls._cache_alias_stack.get()
+        return stack[-1] if stack else "default"
 
     @classmethod
-    def set_cache_alias(cls, cache_alias):
-        cls._current_tenant_cache_alias.set(cache_alias)
+    def push_cache_alias(cls, cache_alias):
+        stack = cls._cache_alias_stack.get()
+        new_stack = stack + [cache_alias]
+        cls._cache_alias_stack.set(new_stack)
 
     @classmethod
-    def clear_cache_alias(cls):
-        cls._current_tenant_cache_alias.set("default")
+    def pop_cache_alias(cls):
+        stack = cls._cache_alias_stack.get()
+        if stack:
+            new_stack = stack[:-1]
+            cls._cache_alias_stack.set(new_stack)
 
-    # --- Clear all ---
+    # --- Clear all (reset to defaults) ---
     @classmethod
     def clear_all(cls):
-        cls.clear_tenant()
-        cls.clear_db_alias()
-        cls.clear_cache_alias()
+        cls._tenant_stack.set([])
+        cls._db_alias_stack.set([constants.DEFAULT_DB_ALIAS])
+        cls._cache_alias_stack.set(["default"])
 
     # --- Context manager ---
     @classmethod
     @contextmanager
-    def use(cls, tenant):
+    def use_tenant(cls, tenant):
         from django_omnitenant.backends.database_backend import DatabaseTenantBackend
         from django_omnitenant.backends.schema_backend import SchemaTenantBackend
         from django_omnitenant.backends.cache_backend import CacheTenantBackend
 
-        """Activate tenant context (DB, schema, cache) for duration of context."""
-        # Save previous tokens
-        prev_token_tenant = cls._current_tenant.get()
-        token_tenant = cls._current_tenant.set(tenant)
+        # Push tenant
+        cls.push_tenant(tenant)
 
         # Activate DB/Schema backend
         backend = (
@@ -79,10 +94,12 @@ class TenantContext:
             else DatabaseTenantBackend(tenant)
         )
         backend.activate()
+        cls.push_db_alias(cls.get_db_alias())  # backend may change alias
 
         # Activate cache backend
         cache_backend = CacheTenantBackend(tenant)
         cache_backend.activate()
+        cls.push_cache_alias(cls.get_cache_alias())
 
         try:
             yield
@@ -91,6 +108,25 @@ class TenantContext:
             backend.deactivate()
             cache_backend.deactivate()
 
-            # Restore previous context
-            cls._current_tenant.reset(token_tenant)
-            cls._current_tenant.set(prev_token_tenant)
+            # Pop tenant/db/cache
+            cls.pop_tenant()
+            cls.pop_db_alias()
+            cls.pop_cache_alias()
+
+    @classmethod
+    @contextmanager
+    def use_schema(cls, schema_name: str):
+        """
+        Context manager to use a specific schema.
+        """
+        from django_omnitenant.backends.schema_backend import SchemaTenantBackend
+
+        tenant: BaseTenant = get_tenant_model()(tenant_id=schema_name)  # type: ignore # Mock tenant for context
+        backend = SchemaTenantBackend(tenant)
+        backend.activate()
+
+        try:
+            yield
+        finally:
+            backend.deactivate()
+            cls.pop_db_alias()

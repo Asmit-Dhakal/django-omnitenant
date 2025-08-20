@@ -1,7 +1,9 @@
 from django_omnitenant.exceptions import DomainNotFound
 from django_omnitenant.models import BaseDomain
+from django_omnitenant.tenant_context import TenantContext
 from django_omnitenant.utils import get_domain_model
 from .base import BaseTenantResolver
+from django_omnitenant.conf import settings
 
 
 class CustomDomainTenantResolver(BaseTenantResolver):
@@ -12,6 +14,7 @@ class CustomDomainTenantResolver(BaseTenantResolver):
 
         Domain: BaseDomain = get_domain_model()  # type: ignore
         try:
-            return Domain.objects.get(domain=host_name).tenant
+            with TenantContext.use_schema(settings.PUBLIC_SCHEMA_NAME):
+                return Domain.objects.get(domain=host_name).tenant
         except Domain.DoesNotExist:
             raise DomainNotFound

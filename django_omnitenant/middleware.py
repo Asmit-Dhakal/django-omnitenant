@@ -40,7 +40,7 @@ class TenantMiddleware(MiddlewareMixin):
                 # return HttpResponseNotFound()
                 return JsonResponse({"detail": "Invalid Domain"}, status=404)
 
-        with TenantContext.use(tenant):
+        with TenantContext.use_tenant(tenant):
             request.tenant = tenant
             response = self.get_response(request)
 

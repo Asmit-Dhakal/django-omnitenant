@@ -1,4 +1,3 @@
-# django_omnitenancy/resolvers.py
 class BaseTenantResolver:
     """
     Interface for resolving a tenant from a request.

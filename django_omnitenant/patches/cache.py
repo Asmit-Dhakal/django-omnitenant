@@ -1,5 +1,3 @@
-# django_omnitenant/patches/cache.py
-
 from django.core.cache import CacheHandler as DjangoCacheHandler
 from django_omnitenant.tenant_context import TenantContext
 import django.core.cache
@@ -8,8 +6,8 @@ from django_omnitenant.conf import settings
 
 class TenantAwareCacheWrapper:
     """
-    Wraps a Django cache backend to be tenant-aware.
-    Adds tenant key prefix if using the default backend.
+    Wraps Django caches to be tenant-aware.
+    Automatically prefixes keys with tenant_id for the default cache.
     """
 
     def __init__(self, handler: DjangoCacheHandler):
@@ -17,56 +15,52 @@ class TenantAwareCacheWrapper:
 
     def _get_cache(self):
         alias = TenantContext.get_cache_alias() or "default"
-        if alias in self._handler:
+        try:
             return self._handler[alias]
-        return self._handler["default"]
+        except KeyError:
+            return self._handler["default"]
 
-    def _prefixed_key(self, key):
+    def _apply_prefix(self, key):
         """
-        Prefix key with tenant_id if using default cache.
+        Apply tenant prefix if using default cache.
         """
         alias = TenantContext.get_cache_alias() or "default"
-        if settings.CACHES[alias]["IS_USING_DEFAULT_CONFIG"]:
-            tenant_id = (
-                TenantContext.get_tenant().tenant_id
-                if TenantContext.get_tenant()
-                else None
-            )
-            if tenant_id is not None:
-                return f"{tenant_id}:{key}"
+        if settings.CACHES[alias].get("IS_USING_DEFAULT_CONFIG", False):
+            tenant = TenantContext.get_tenant()
+            if tenant is not None:
+                return f"{tenant.tenant_id}:{key}"
         return key
 
-    # --- Standard cache methods ---
+    # --- Dict-style access ---
     def __getitem__(self, key):
-        return self._get_cache()[self._prefixed_key(key)]
+        return self._get_cache().get(self._apply_prefix(key))
 
     def __setitem__(self, key, value):
-        self._get_cache()[self._prefixed_key(key)] = value
+        self._get_cache().set(self._apply_prefix(key), value)
 
     def __delitem__(self, key):
-        del self._get_cache()[self._prefixed_key(key)]
+        deleted = self._get_cache().delete(self._apply_prefix(key))
+        if not deleted:
+            raise KeyError(key)
 
     def __contains__(self, key):
-        return self._prefixed_key(key) in self._get_cache()
+        return self._get_cache().get(self._apply_prefix(key)) is not None
 
+    # --- Attribute access (methods like get, set, delete) ---
     def __getattr__(self, name):
-        # For methods like get, set, delete, etc.
         cache = self._get_cache()
         attr = getattr(cache, name)
         if callable(attr):
-            # Wrap set/get/delete to add prefix automatically
             def wrapper(*args, **kwargs):
-                if name in ("get", "set", "delete", "has_key"):
-                    if args:
-                        args = (self._prefixed_key(args[0]), *args[1:])
+                if args and name in ("get", "set", "delete", "has_key"):
+                    args = (self._apply_prefix(args[0]), *args[1:])
                 return attr(*args, **kwargs)
-
             return wrapper
         return attr
 
     # --- Django expects this ---
     def close_all(self):
-        for alias in self._handler:
+        for alias in getattr(self._handler, "_caches", {}):
             backend = self._handler[alias]
             if hasattr(backend, "close"):
                 backend.close()

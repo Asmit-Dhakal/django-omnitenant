@@ -3,6 +3,7 @@ from .conf import settings
 from django.db.models.base import Model
 from django.db import connections
 from django.core.cache import caches
+import re
 
 
 def get_tenant_model() -> type[Model]:
@@ -74,3 +75,45 @@ def reset_cache_connection(alias: str):
 
     # Force re-initialization on demand
     return caches[alias]
+
+
+def convert_to_valid_pgsql_schema_name(name: str) -> str:
+    """
+    Convert a string into a valid PostgreSQL schema name.
+    Rules:
+      - Max length 63
+      - Cannot start with 'pg_'
+      - Only letters, numbers, and underscores
+      - Lowercased
+    """
+    # Normalize: lowercase + replace invalid chars with underscore
+    name = re.sub(r"[^a-zA-Z0-9_]", "_", name.lower())
+
+    # Trim length to 63
+    name = name[:63]
+
+    # If starts with 'pg_', prefix with 'x_'
+    if name.startswith("pg_"):
+        name = f"x_{name[3:]}" or "x"
+
+    # Ensure not empty
+    if not name:
+        name = "default_schema"
+
+    return name
+
+
+def get_active_schema_name(connection=None, db_alias: str | None = None) -> str:
+    """
+    Get the currently active schema name for the given database connection.
+    If no connection is provided, uses the default connection.
+    """
+    if connection is None:
+        connection = connections[db_alias or "default"]
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT current_schema();")
+            return cursor.fetchone()[0]  # type: ignore
+    except Exception:
+        return "public"

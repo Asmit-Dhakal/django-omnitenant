@@ -33,6 +33,6 @@ class Command(BaseCommand):
             )
 
         self.stdout.write(self.style.SUCCESS(f"Running migrations for tenant: {tenant}"))
-        with TenantContext.use(tenant):
+        with TenantContext.use_tenant(tenant):
             db_alias: str = TenantContext.get_db_alias()
             call_command("migrate", *args, database=db_alias, **options)

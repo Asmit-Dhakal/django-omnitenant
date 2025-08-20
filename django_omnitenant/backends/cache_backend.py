@@ -42,7 +42,7 @@ class CacheTenantBackend:
         cache_alias, _ = self.get_alias_and_config(self.tenant)
         if cache_alias not in settings.CACHES:
             self.bind()
-        TenantContext.set_cache_alias(cache_alias)
+        TenantContext.push_cache_alias(cache_alias)
 
     def deactivate(self):
-        TenantContext.clear_cache_alias()
+        TenantContext.pop_cache_alias()
