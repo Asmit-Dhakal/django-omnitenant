@@ -1,7 +1,7 @@
 from django.db import models
 from .validators import validate_dns_label
 from .conf import settings
-from .utils import reset_db_connection, reset_cache_connection
+from .utils import get_tenant_backend
 
 
 class BaseTenant(models.Model):
@@ -31,7 +31,8 @@ class BaseTenant(models.Model):
         if self.pk:
             old = type(self).objects.get(pk=self.pk)
             changed_fields = [
-                f.name for f in self._meta.fields
+                f.name
+                for f in self._meta.fields
                 if getattr(old, f.name) != getattr(self, f.name)
             ]
         else:
@@ -40,20 +41,27 @@ class BaseTenant(models.Model):
         super().save(*args, **kwargs)
 
         if any(field in changed_fields for field in ["config", "isolation_type"]):
+            from .utils import reset_db_connection, reset_cache_connection
+            from django_omnitenant.backends.cache_backend import CacheTenantBackend
+
             if self.isolation_type == self.IsolationType.DATABASE:
-                from django_omnitenant.backends.database_backend import DatabaseTenantBackend
+                from django_omnitenant.backends.database_backend import (
+                    DatabaseTenantBackend,
+                )
+
                 alias, config = DatabaseTenantBackend.get_alias_and_config(self)
                 settings.DATABASES[alias] = config
                 reset_db_connection(alias)
 
-            from django_omnitenant.backends.cache_backend import CacheTenantBackend
             alias, config = CacheTenantBackend.get_alias_and_config(self)
             settings.CACHES[alias] = config
             reset_cache_connection(alias)
 
-            
-
-
+    def delete(self, *args, **kwargs):
+        result = super().delete(*args, **kwargs)
+        backend = get_tenant_backend(self)
+        backend.delete()
+        return result
 
 
 class BaseDomain(models.Model):

@@ -117,3 +117,15 @@ def get_active_schema_name(connection=None, db_alias: str | None = None) -> str:
             return cursor.fetchone()[0]  # type: ignore
     except Exception:
         return "public"
+
+
+def get_tenant_backend(tenant):
+    from .backends import DatabaseTenantBackend, SchemaTenantBackend
+
+    from django_omnitenant.models import BaseTenant
+
+    return (
+        SchemaTenantBackend(tenant)
+        if tenant.isolation_type == BaseTenant.IsolationType.SCHEMA
+        else DatabaseTenantBackend(tenant)
+    )

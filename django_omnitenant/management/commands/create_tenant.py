@@ -1,17 +1,6 @@
 from django.core.management.base import BaseCommand
 from django_omnitenant.models import BaseTenant
-from django_omnitenant.utils import get_tenant_model
-from .migrate_tenant import Command as MigrateTenantCommand
-
-try:
-    from django.db.backends.postgresql.psycopg_any import is_psycopg3
-except ImportError:
-    is_psycopg3 = False
-
-if is_psycopg3:
-    import psycopg as psycopg_driver
-else:
-    import psycopg2 as psycopg_driver
+from django_omnitenant.utils import get_tenant_model, get_tenant_backend
 
 
 class Command(BaseCommand):
@@ -37,14 +26,14 @@ class Command(BaseCommand):
 
         isolation_type = valid_inputs[isolation_type_input]
 
+        # Ask for DB config if database
+        db_config = {}
+        create_db = False
+
         # Ask if migrations should be run immediately
         run_migrations = self._ask_yes_no(
             "Do you want to run migrations for this tenant now?"
         )
-
-        # Ask for DB config if database
-        db_config = {}
-        create_db = False
         if isolation_type in (BaseTenant.IsolationType.DATABASE,):
             create_db = self._ask_yes_no(
                 "Do you want to create the database now? (y/n): "
@@ -65,31 +54,28 @@ class Command(BaseCommand):
             }
 
         # Create tenant
-        tenant = None
+        tenant = None  # type: ignore
+        tenant: BaseTenant = get_tenant_model().objects.create(
+            tenant_id=tenant_id,
+            name=tenant_name,
+            isolation_type=isolation_type,
+            config={"db_config": db_config},
+        )  # type: ignore
+        self.stdout.write(
+            self.style.SUCCESS(f"Tenant '{tenant_name}' created successfully!")
+        )
+        backend = get_tenant_backend(tenant)
+
         try:
-            tenant = get_tenant_model().objects.create(
-                tenant_id=tenant_id,
-                name=tenant_name,
-                isolation_type=isolation_type,
-                config={"db_config": db_config},
-            )  # type: ignore
-            self.stdout.write(
-                self.style.SUCCESS(f"Tenant '{tenant_name}' created successfully!")
-            )
+            if tenant.isolation_type == BaseTenant.IsolationType.DATABASE:
+                if create_db:
+                    self.stdout.write(f"Creating database '{db_name}'...")
+                    backend.create(run_migrations=run_migrations)
+                elif run_migrations:
+                    backend.migrate()
 
-            # Optionally create the DB
-            if create_db:
-                self._create_database(
-                    db_config["NAME"],
-                    db_config["USER"],
-                    db_config["PASSWORD"],
-                    db_config["HOST"],
-                    db_config["PORT"],
-                )
-
-            # Run migrations if specified
-            if run_migrations:
-                self._run_migrations_for_tenant(tenant_id)
+            elif tenant.isolation_type == BaseTenant.IsolationType.SCHEMA:
+                backend.create(run_migrations=run_migrations)
         except Exception as e:
             # If DB already exists, continue; else rollback tenant
             if "already exists" in str(e).lower():
@@ -105,48 +91,6 @@ class Command(BaseCommand):
                 return
 
         self.stdout.write(self.style.SUCCESS("Tenant setup complete."))
-
-    def _create_database(self, db_name, db_user, db_password, db_host, db_port):
-        """Create the tenant database if not exists (Postgres example)."""
-
-        self.stdout.write(f"Creating database '{db_name}'...")
-        conn = psycopg_driver.connect(
-            dbname="postgres",
-            user=db_user,
-            password=db_password,
-            host=db_host,
-            port=db_port,
-        )
-        conn.autocommit = True
-        cur = conn.cursor()
-        try:
-            if is_psycopg3:
-                from psycopg import sql
-            else:
-                from psycopg2 import sql
-            cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(db_name)))
-            self.stdout.write(
-                self.style.SUCCESS(f"Database '{db_name}' created successfully.")
-            )
-        except Exception as e:
-            self.stdout.write(self.style.WARNING(f"Database creation skipped: {e}"))
-        finally:
-            cur.close()
-            conn.close()
-
-    def _run_migrations_for_tenant(self, tenant_id):
-        """Run migrations for the newly created tenant using custom migrate_tenant command."""
-        try:
-            MigrateTenantCommand().handle(tenant_id=tenant_id)
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"Migrations completed successfully for tenant '{tenant_id}'."
-                )
-            )
-        except Exception as e:
-            self.stdout.write(
-                self.style.ERROR(f"Migrations failed for tenant '{tenant_id}': {e}")
-            )
 
     def _ask_yes_no(self, prompt: str) -> bool:
         """Ask the user a yes/no question until a valid response is given."""

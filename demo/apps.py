@@ -2,6 +2,11 @@ from django.apps import AppConfig
 
 
 class DemoConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'demo'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "demo"
     # tenant_managed = False
+
+    def ready(self) -> None:
+        import demo.signals  # noqa: F401
+
+        return super().ready()
