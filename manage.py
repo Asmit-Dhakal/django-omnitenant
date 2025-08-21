@@ -20,3 +20,9 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+# Admin panel with tenant management
+# Signals for tenant_config_updated
+# Logging 
+# Management command to delete tenant
