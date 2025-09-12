@@ -1,13 +1,14 @@
+from importlib import import_module
 from typing import Callable
 
 from django.http import HttpRequest, HttpResponse, HttpResponseNotFound, JsonResponse
 from django.utils.deprecation import MiddlewareMixin
-from importlib import import_module
 
 from django_omnitenant.exceptions import DomainNotFound, TenantNotFound
-from .tenant_context import TenantContext
+
 from .conf import settings
 from .models import BaseTenant
+from .tenant_context import TenantContext
 from .utils import get_tenant_model
 
 
@@ -32,13 +33,16 @@ class TenantMiddleware(MiddlewareMixin):
         try:
             tenant: BaseTenant = self.resolver.resolve(request)
         except (DomainNotFound, TenantNotFound):
-            host = request.get_host().split(":")[0] 
+            host = request.get_host().split(":")[0]
             if host == settings.DEFAULT_HOST:
                 Teant = get_tenant_model()
-                tenant: BaseTenant =  Teant(name="default", tenant_id="default", isolation_type=BaseTenant.IsolationType.DATABASE) # type: ignore
+                tenant: BaseTenant = Teant(
+                    name=settings.PUBLIC_SCHEMA_NAME,
+                    tenant_id=settings.PUBLIC_SCHEMA_NAME,
+                    isolation_type=BaseTenant.IsolationType.DATABASE,
+                )  # type: ignore
             else:
-                # return HttpResponseNotFound()
-                return JsonResponse({"detail": "Invalid Domain"}, status=404)
+                return JsonResponse({"detail": "Invalid Domain"}, status=400)
 
         with TenantContext.use_tenant(tenant):
             request.tenant = tenant

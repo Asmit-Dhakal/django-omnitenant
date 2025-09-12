@@ -43,6 +43,7 @@ class _Constants:
     def DEFAULT_HOST(self) -> str:
         return "DEFAULT_HOST"
     
+       
     @cached_property
     def PATCHES(self) -> str:
         return "PATCHES"

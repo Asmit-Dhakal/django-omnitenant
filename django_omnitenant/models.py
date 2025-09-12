@@ -1,5 +1,5 @@
 from django.db import models
-from .validators import validate_dns_label
+from .validators import validate_dns_label, validate_domain_name
 from .conf import settings
 from .utils import get_tenant_backend
 
@@ -70,9 +70,9 @@ class BaseDomain(models.Model):
         on_delete=models.CASCADE,
         help_text="The tenant this domain belongs to.",
     )
-    domain = models.SlugField(
+    domain = models.CharField(
         unique=True,
-        validators=[validate_dns_label],
+        validators=[validate_domain_name],
         help_text="Must be a valid DNS label (RFC 1034/1035).",
     )
 

@@ -1,5 +1,6 @@
-from contextvars import ContextVar
 from contextlib import contextmanager
+from contextvars import ContextVar
+
 from django_omnitenant.constants import constants
 from django_omnitenant.models import BaseTenant
 from django_omnitenant.utils import get_tenant_model
@@ -80,9 +81,9 @@ class TenantContext:
     @classmethod
     @contextmanager
     def use_tenant(cls, tenant):
+        from django_omnitenant.backends.cache_backend import CacheTenantBackend
         from django_omnitenant.backends.database_backend import DatabaseTenantBackend
         from django_omnitenant.backends.schema_backend import SchemaTenantBackend
-        from django_omnitenant.backends.cache_backend import CacheTenantBackend
 
         # Push tenant
         cls.push_tenant(tenant)
@@ -130,3 +131,56 @@ class TenantContext:
         finally:
             backend.deactivate()
             cls.pop_db_alias()
+
+    @classmethod
+    @contextmanager
+    def use_default_db(cls):
+        from django_omnitenant.backends.cache_backend import CacheTenantBackend
+        from django_omnitenant.backends.database_backend import DatabaseTenantBackend
+
+        # Push default DB & cache
+        default_db = constants.DEFAULT_DB_ALIAS
+        default_cache = constants.DEFAULT_CACHE_ALIAS
+
+        cls.push_db_alias(default_db)
+        cls.push_cache_alias(default_cache)
+
+        # Activate default backends
+        db_backend = DatabaseTenantBackend(None)  # None means no specific tenant
+        db_backend.activate()
+        cache_backend = CacheTenantBackend(None)
+        cache_backend.activate()
+
+        try:
+            yield
+        finally:
+            db_backend.deactivate()
+            cache_backend.deactivate()
+            cls.pop_db_alias()
+            cls.pop_cache_alias()
+
+    # --- New: use public schema ---
+    @classmethod
+    @contextmanager
+    def use_public_schema(cls):
+        from django_omnitenant.backends.cache_backend import CacheTenantBackend
+        from django_omnitenant.backends.schema_backend import SchemaTenantBackend
+
+        # Create a mock tenant representing public schema
+        tenant: BaseTenant = get_tenant_model()(tenant_id="public")  # type: ignore
+        backend = SchemaTenantBackend(tenant)
+        backend.activate()
+        cls.push_db_alias(cls.get_db_alias())
+
+        # Public cache
+        cache_backend = CacheTenantBackend(tenant)
+        cache_backend.activate()
+        cls.push_cache_alias(cls.get_cache_alias())
+
+        try:
+            yield
+        finally:
+            backend.deactivate()
+            cache_backend.deactivate()
+            cls.pop_db_alias()
+            cls.pop_cache_alias()

@@ -14,6 +14,8 @@ def get_domain_model() -> type[Model]:
     return apps.get_model(settings.DOMAIN_MODEL)
 
 
+
+
 def get_custom_apps() -> list[str]:
     """
     Return a list of custom apps within the project (excluding built-in and third-party apps).

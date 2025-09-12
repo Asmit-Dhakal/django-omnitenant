@@ -63,6 +63,7 @@ class _WrappedSettings:
         This is used when no specific tenant is resolved.
         """
         return self.OMNITENANT_CONFIG.get(constants.DEFAULT_HOST, "localhost")
+   
 
 
 settings = _WrappedSettings()
