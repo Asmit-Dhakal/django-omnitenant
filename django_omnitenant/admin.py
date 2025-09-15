@@ -17,8 +17,8 @@ class _DefaultTenantOnlyAdmin(admin.ModelAdmin):
 
     def get_model_perms(self, request):
         if self._is_default_tenant(request):
-            return {}
-        return super().get_model_perms(request)
+            return super().get_model_perms(request)
+        return {}
 
     def has_module_permission(self, request):
         return self._is_default_tenant(request)
