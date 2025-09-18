@@ -1,10 +1,15 @@
 from django.core.management import call_command
-from .base import BaseTenantBackend
-from django_omnitenant.conf import settings
-from django_omnitenant.tenant_context import TenantContext
-from django_omnitenant.signals import tenant_deleted
-from django_omnitenant.constants import constants
+from django.db import connection
 from requests.structures import CaseInsensitiveDict
+
+from django_omnitenant.conf import settings
+from django_omnitenant.constants import constants
+from django_omnitenant.models import BaseTenant
+from django_omnitenant.signals import tenant_deleted
+from django_omnitenant.tenant_context import TenantContext
+from django_omnitenant.utils import get_active_schema_name
+
+from .base import BaseTenantBackend
 
 try:
     from django.db.backends.postgresql.psycopg_any import is_psycopg3
@@ -18,7 +23,7 @@ else:
 
 
 class DatabaseTenantBackend(BaseTenantBackend):
-    def __init__(self, tenant):
+    def __init__(self, tenant: BaseTenant):
         super().__init__(tenant)
         self.db_config: CaseInsensitiveDict = CaseInsensitiveDict(
             self.tenant.config.get("db_config", {})
@@ -71,8 +76,14 @@ class DatabaseTenantBackend(BaseTenantBackend):
             self.bind()
         TenantContext.push_db_alias(db_alias)
 
+        self.previous_schema = get_active_schema_name(connection)
+        connection.set_schema(
+            "public"
+        )  # If a tenant is using scheman backend then while using use_default_db won't work properly as the db will already be the default one in that case so we need to change the schema to public
+
     def deactivate(self):
         TenantContext.pop_db_alias()
+        connection.set_schema(self.previous_schema)
 
     # --- helpers ---
     @classmethod

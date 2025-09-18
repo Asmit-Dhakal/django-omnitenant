@@ -1,9 +1,15 @@
-from django.apps import apps
-from .conf import settings
-from django.db.models.base import Model
-from django.db import connections
-from django.core.cache import caches
 import re
+from typing import TYPE_CHECKING, Optional
+
+from django.apps import apps
+from django.core.cache import caches
+from django.db import connections
+from django.db.models.base import Model
+
+from .conf import settings
+
+if TYPE_CHECKING:
+    from django_omnitenant.models import BaseTenant
 
 
 def get_tenant_model() -> type[Model]:
@@ -12,8 +18,6 @@ def get_tenant_model() -> type[Model]:
 
 def get_domain_model() -> type[Model]:
     return apps.get_model(settings.DOMAIN_MODEL)
-
-
 
 
 def get_custom_apps() -> list[str]:
@@ -122,12 +126,18 @@ def get_active_schema_name(connection=None, db_alias: str | None = None) -> str:
 
 
 def get_tenant_backend(tenant):
-    from .backends import DatabaseTenantBackend, SchemaTenantBackend
-
     from django_omnitenant.models import BaseTenant
+
+    from .backends import DatabaseTenantBackend, SchemaTenantBackend
 
     return (
         SchemaTenantBackend(tenant)
         if tenant.isolation_type == BaseTenant.IsolationType.SCHEMA
         else DatabaseTenantBackend(tenant)
     )
+
+
+def get_current_tenant() -> Optional["BaseTenant"]:
+    from django_omnitenant.tenant_context import TenantContext
+
+    return TenantContext.get_tenant()

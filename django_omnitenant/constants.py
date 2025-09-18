@@ -5,11 +5,10 @@ class _Constants:
     @cached_property
     def TENANT_MODEL(self) -> str:
         return "TENANT_MODEL"
-    
+
     @cached_property
     def DOMAIN_MODEL(self) -> str:
         return "DOMAIN_MODEL"
-
 
     @cached_property
     def OMNITENANT_CONFIG(self) -> str:
@@ -22,7 +21,7 @@ class _Constants:
     @cached_property
     def DEFAULT_DB_ALIAS(self) -> str:
         return "default"
-    
+
     @cached_property
     def GLOBAL_DB_ALIAS(self) -> str:
         return "default"
@@ -32,18 +31,17 @@ class _Constants:
         return "schema_config"
 
     @cached_property
-    def PUBLIC_SCHEMA_NAME(self) -> str:
-        return "PUBLIC_SCHEMA_NAME"
-    
+    def DEFAULT_TENANT_NAME(self) -> str:
+        return "DEFAULT_TENANT_NAME"
+
     @cached_property
     def DEFAULT_CACHE_ALIAS(self) -> str:
         return "default"
-    
+
     @cached_property
     def DEFAULT_HOST(self) -> str:
         return "DEFAULT_HOST"
-    
-       
+
     @cached_property
     def PATCHES(self) -> str:
         return "PATCHES"

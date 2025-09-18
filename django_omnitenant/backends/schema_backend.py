@@ -1,11 +1,11 @@
+from django.core.management import call_command
 from django.db import connection
 
 from django_omnitenant.models import BaseTenant
-from .base import BaseTenantBackend
+from django_omnitenant.tenant_context import TenantContext
 from django_omnitenant.utils import get_active_schema_name
 
-from django.core.management import call_command
-from django_omnitenant.tenant_context import TenantContext
+from .base import BaseTenantBackend
 
 
 class SchemaTenantBackend(BaseTenantBackend):

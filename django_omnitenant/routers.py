@@ -101,7 +101,7 @@ class TenantRouter:
         if self._is_global_model(model):
             return (
                 db == constants.GLOBAL_DB_ALIAS
-                and selected_schema == settings.PUBLIC_SCHEMA_NAME
+                and selected_schema == settings.DEFAULT_TENANT_NAME
             )
 
         if is_tenant_managed:
@@ -109,17 +109,17 @@ class TenantRouter:
                 # Schema-managed tenant: migrate to tenant schema on default DB
                 return (
                     db == constants.DEFAULT_DB_ALIAS
-                    and selected_schema != settings.PUBLIC_SCHEMA_NAME
+                    and selected_schema != settings.DEFAULT_TENANT_NAME
                 )
             else:
                 # DB-managed tenant: migrate to tenant DB (non-default)
                 return (
                     db != constants.DEFAULT_DB_ALIAS
-                    and selected_schema == settings.PUBLIC_SCHEMA_NAME
+                    and selected_schema == settings.DEFAULT_TENANT_NAME
                 )
 
         # Non-tenant-managed logic: migrate only to default DB/public schema
         return (
             db == constants.DEFAULT_DB_ALIAS
-            and selected_schema == settings.PUBLIC_SCHEMA_NAME
+            and selected_schema == settings.DEFAULT_TENANT_NAME
         )

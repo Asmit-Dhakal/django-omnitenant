@@ -232,5 +232,5 @@ class SchemaTenantAPITestCase(BaseAPITestCase, SchemaTenantTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        with TenantContext.use_schema(settings.PUBLIC_SCHEMA_NAME):
+        with TenantContext.use_schema(settings.DEFAULT_TENANT_NAME):
             cls._setup_domain()

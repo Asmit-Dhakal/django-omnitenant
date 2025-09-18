@@ -11,7 +11,7 @@ class DatabaseWrapper(PostgresDatabaseWrapper):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._current_schema = settings.PUBLIC_SCHEMA_NAME
+        self._current_schema = settings.DEFAULT_TENANT_NAME
 
     def set_schema(self, schema_name):
         """
@@ -29,7 +29,7 @@ class DatabaseWrapper(PostgresDatabaseWrapper):
         """
         Reset to the public schema.
         """
-        self.set_schema(settings.PUBLIC_SCHEMA_NAME)
+        self.set_schema(settings.DEFAULT_TENANT_NAME)
 
     @property
     def current_schema(self):

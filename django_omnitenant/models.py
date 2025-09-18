@@ -1,7 +1,32 @@
 from django.db import models
-from .validators import validate_dns_label, validate_domain_name
+
 from .conf import settings
-from .utils import get_tenant_backend
+from .utils import get_current_tenant, get_tenant_backend
+from .validators import validate_dns_label, validate_domain_name
+
+
+class TenantQuerySetManager(models.Manager):
+    """Tenant-aware manager with common queryset helpers."""
+
+    def _check_tenant_access(self) -> None:
+        """Raise if the current tenant is not allowed to access this model."""
+        tenant = get_current_tenant()
+        if not tenant:
+            return
+
+        # By default, models are tenant-managed unless explicitly marked
+        if not getattr(self.model, "globally_managed", False) and not getattr(
+            self.model, "tenant_managed", True
+        ):
+            if tenant.tenant_id != settings.DEFAULT_TENANT_NAME:
+                raise PermissionError(
+                    f"Model '{self.model.__name__}' is not accessible "
+                    f"from '{tenant.name}'"
+                )
+
+    def get_queryset(self):
+        self._check_tenant_access()
+        return super().get_queryset()
 
 
 class BaseTenant(models.Model):
@@ -24,6 +49,8 @@ class BaseTenant(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
+    objects: TenantQuerySetManager = TenantQuerySetManager()
+
     class Meta:
         abstract = True
 
@@ -41,8 +68,9 @@ class BaseTenant(models.Model):
         super().save(*args, **kwargs)
 
         if any(field in changed_fields for field in ["config", "isolation_type"]):
-            from .utils import reset_db_connection, reset_cache_connection
             from django_omnitenant.backends.cache_backend import CacheTenantBackend
+
+            from .utils import reset_cache_connection, reset_db_connection
 
             if self.isolation_type == self.IsolationType.DATABASE:
                 from django_omnitenant.backends.database_backend import (
@@ -75,6 +103,8 @@ class BaseDomain(models.Model):
         validators=[validate_domain_name],
         help_text="Must be a valid DNS label (RFC 1034/1035).",
     )
+
+    objects: TenantQuerySetManager = TenantQuerySetManager()
 
     class Meta:
         abstract = True

@@ -1,6 +1,7 @@
 from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import cached_property
+
 from .constants import constants
 
 
@@ -34,8 +35,8 @@ class _WrappedSettings:
         return getattr(django_settings, "TIME_ZONE", "UTC")
 
     @cached_property
-    def PUBLIC_SCHEMA_NAME(self) -> str:
-        return self.SCHEMA_CONFIG.get(constants.PUBLIC_SCHEMA_NAME, "public")
+    def DEFAULT_TENANT_NAME(self) -> str:
+        return self.SCHEMA_CONFIG.get(constants.DEFAULT_TENANT_NAME, "public")
 
     @cached_property
     def TENANT_MODEL(self) -> str:
@@ -56,6 +57,7 @@ class _WrappedSettings:
                 "You must define DOMAIN_MODEL in your Omnitenant configuration."
             )
         return domain_model
+
     @cached_property
     def DEFAULT_HOST(self) -> str:
         """
@@ -63,7 +65,6 @@ class _WrappedSettings:
         This is used when no specific tenant is resolved.
         """
         return self.OMNITENANT_CONFIG.get(constants.DEFAULT_HOST, "localhost")
-   
 
 
 settings = _WrappedSettings()

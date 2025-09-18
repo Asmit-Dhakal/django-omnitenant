@@ -37,8 +37,8 @@ class TenantMiddleware(MiddlewareMixin):
             if host == settings.DEFAULT_HOST:
                 Teant = get_tenant_model()
                 tenant: BaseTenant = Teant(
-                    name=settings.PUBLIC_SCHEMA_NAME,
-                    tenant_id=settings.PUBLIC_SCHEMA_NAME,
+                    name=settings.DEFAULT_TENANT_NAME,
+                    tenant_id=settings.DEFAULT_TENANT_NAME,
                     isolation_type=BaseTenant.IsolationType.DATABASE,
                 )  # type: ignore
             else:

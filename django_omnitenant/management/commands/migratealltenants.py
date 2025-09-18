@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
+
 from django_omnitenant.models import BaseTenant
-from django_omnitenant.utils import get_tenant_model
-from django_omnitenant.utils import get_tenant_backend
+from django_omnitenant.utils import get_tenant_backend, get_tenant_model
 
 
 class Command(BaseCommand):

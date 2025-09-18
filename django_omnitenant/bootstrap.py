@@ -1,7 +1,9 @@
 from importlib import import_module
+
 from django.core.exceptions import ImproperlyConfigured
-from .conf import settings
 from django.db.models import Model
+
+from .conf import settings
 from .constants import constants
 from .utils import get_tenant_model
 
@@ -25,7 +27,7 @@ class _BootStrapper:
             )
         if isinstance(patches, tuple):
             patches = list(patches)
-        
+
         self._patches.extend(patches)
 
     def _run_validation(self) -> None:
@@ -49,6 +51,13 @@ class _BootStrapper:
         if not issubclass(model, Model):
             raise ImproperlyConfigured(
                 f"{tenant_model_path} is not a valid Django model."
+            )
+
+        default_host: str = settings.OMNITENANT_CONFIG.get(constants.DEFAULT_HOST, "")
+        if not default_host:
+            raise ImproperlyConfigured(
+                f"OMNITENANT_CONFIG must define '{constants.DEFAULT_HOST}'. Example:\n"
+                f"OMNITENANT_CONFIG = {{ '{constants.DEFAULT_HOST}': 'localhost' }}"
             )
 
     def _run_patches(self):

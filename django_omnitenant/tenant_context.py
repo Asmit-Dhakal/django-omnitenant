@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from contextvars import ContextVar
 
+from django_omnitenant.conf import settings
 from django_omnitenant.constants import constants
 from django_omnitenant.models import BaseTenant
 from django_omnitenant.utils import get_tenant_model
@@ -15,12 +16,12 @@ class TenantContext:
 
     # --- Tenant ---
     @classmethod
-    def get_tenant(cls):
+    def get_tenant(cls) -> BaseTenant | None:
         stack = cls._tenant_stack.get()
         return stack[-1] if stack else None
 
     @classmethod
-    def push_tenant(cls, tenant):
+    def push_tenant(cls, tenant: BaseTenant):
         stack = cls._tenant_stack.get()
         new_stack = stack + [tenant]
         cls._tenant_stack.set(new_stack)
@@ -146,9 +147,10 @@ class TenantContext:
         cls.push_cache_alias(default_cache)
 
         # Activate default backends
-        db_backend = DatabaseTenantBackend(None)  # None means no specific tenant
+        tenant: BaseTenant = get_tenant_model()(tenant_id=settings.DEFAULT_TENANT_NAME)
+        db_backend = DatabaseTenantBackend(tenant)  # None means no specific tenant
         db_backend.activate()
-        cache_backend = CacheTenantBackend(None)
+        cache_backend = CacheTenantBackend(tenant)
         cache_backend.activate()
 
         try:
