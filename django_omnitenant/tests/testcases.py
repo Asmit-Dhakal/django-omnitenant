@@ -86,6 +86,8 @@ class BaseTenantTestCase(TransactionTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls._setup_tenant()
+        cls._tenant_context = TenantContext.use_tenant(cls.tenant)
+        cls._tenant_context.__enter__()
         super().setUpClass()
 
     @classmethod
@@ -131,8 +133,6 @@ class DBTenantTestCase(BaseTenantTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls._tenant_context = TenantContext.use_tenant(cls.tenant)
-        cls._tenant_context.__enter__()
         if cls.flush_per_class and cls._db_alias:
             cls._flush_db(cls._db_alias)
 
@@ -156,6 +156,7 @@ class DBTenantTestCase(BaseTenantTestCase):
                 tenant_id="test_db_tenant",
                 isolation_type=BaseTenant.IsolationType.DATABASE,
             )
+
         cls._db_alias = cls._get_db_alias()
         if cls._db_alias not in cls.databases:
             cls.databases = set(cls.databases) | {cls._db_alias}

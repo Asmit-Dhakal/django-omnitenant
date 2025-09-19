@@ -36,7 +36,7 @@ class _WrappedSettings:
 
     @cached_property
     def DEFAULT_TENANT_NAME(self) -> str:
-        return self.SCHEMA_CONFIG.get(constants.DEFAULT_TENANT_NAME, "public")
+        return self.SCHEMA_CONFIG.get(constants.DEFAULT_TENANT_NAME, "default")
 
     @cached_property
     def TENANT_MODEL(self) -> str:

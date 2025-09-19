@@ -15,7 +15,7 @@ class CustomDomainTenantResolver(BaseTenantResolver):
 
         Domain: BaseDomain = get_domain_model()  # type: ignore
         try:
-            with TenantContext.use_schema(settings.DEFAULT_TENANT_NAME):
+            with TenantContext.use_default_db():
                 return Domain.objects.get(domain=host_name).tenant
         except Domain.DoesNotExist:
             raise DomainNotFound

@@ -71,7 +71,7 @@ class DatabaseTenantBackend(BaseTenantBackend):
         print(f"[DB BACKEND] Bound tenant {self.tenant.tenant_id} to alias {db_alias}.")
 
     def activate(self):
-        db_alias = self.db_config.get("ALIAS") or self.db_config.get("NAME")
+        db_alias = self.db_config.get("ALIAS") or self.db_config.get("NAME") or constants.DEFAULT_DB_ALIAS
         if db_alias not in settings.DATABASES:
             self.bind()
         TenantContext.push_db_alias(db_alias)

@@ -1,7 +1,8 @@
-from django.core.cache import CacheHandler as DjangoCacheHandler
-from django_omnitenant.tenant_context import TenantContext
 import django.core.cache
+from django.core.cache import CacheHandler as DjangoCacheHandler
+
 from django_omnitenant.conf import settings
+from django_omnitenant.tenant_context import TenantContext
 
 
 class TenantAwareCacheWrapper:
@@ -25,7 +26,7 @@ class TenantAwareCacheWrapper:
         Apply tenant prefix if using default cache.
         """
         alias = TenantContext.get_cache_alias() or "default"
-        if settings.CACHES[alias].get("IS_USING_DEFAULT_CONFIG", False):
+        if settings.CACHES[alias].get("IS_USING_DEFAULT_CONFIG", True):
             tenant = TenantContext.get_tenant()
             if tenant is not None:
                 return f"{tenant.tenant_id}:{key}"
@@ -46,16 +47,51 @@ class TenantAwareCacheWrapper:
     def __contains__(self, key):
         return self._get_cache().get(self._apply_prefix(key)) is not None
 
-    # --- Attribute access (methods like get, set, delete) ---
+    # --- Attribute access (methods like get, set, delete, etc.) ---
     def __getattr__(self, name):
         cache = self._get_cache()
         attr = getattr(cache, name)
+
         if callable(attr):
+
             def wrapper(*args, **kwargs):
-                if args and name in ("get", "set", "delete", "has_key"):
+                if not args:
+                    return attr(*args, **kwargs)
+
+                # Single-key methods
+                if name in {
+                    "get",
+                    "set",
+                    "add",
+                    "delete",
+                    "has_key",
+                    "incr",
+                    "decr",
+                    "touch",
+                    "get_or_set",
+                }:
                     args = (self._apply_prefix(args[0]), *args[1:])
+
+                # No need to apply prefix for these because keys method will be called before these methods whill will already apply the prefix so just call these methods without applying prefix
+                # Multi-key methods
+                # elif name in {"get_many", "delete_many"}:
+                # keys = args[0]
+                # args = ([self._apply_prefix(k) for k in keys], *args[1:])
+
+                # Dict-of-keys method
+                # elif name == "set_many":
+                #     mapping = args[0]
+                #     new_mapping = {self._apply_prefix(k): v for k, v in mapping.items()}
+                #     args = (new_mapping, *args[1:])
+
+                # Pattern-based
+                elif name == "keys":
+                    args = (self._apply_prefix(args[0]), *args[1:])
+
                 return attr(*args, **kwargs)
+
             return wrapper
+
         return attr
 
     # --- Django expects this ---
@@ -73,8 +109,15 @@ def patch_django_cache():
     original_handler = DjangoCacheHandler()
     tenant_aware_wrapper = TenantAwareCacheWrapper(original_handler)
 
+    # Patch the main module references
     django.core.cache.caches = tenant_aware_wrapper
     django.core.cache.cache = tenant_aware_wrapper
+
+    # Patch the internal ConnectionProxy target so all lazy accesses go through wrapper
+    if hasattr(django.core.cache, "_connections"):
+        for name in ("cache", "caches"):
+            if name in django.core.cache._connections:
+                django.core.cache._connections[name] = tenant_aware_wrapper
 
 
 patch_django_cache()
