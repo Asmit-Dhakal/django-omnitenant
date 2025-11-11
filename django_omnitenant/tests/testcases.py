@@ -186,7 +186,7 @@ class DBTenantTestCase(BaseTenantTestCase):
 
     @staticmethod
     def _flush_db(db_alias):
-        call_command("flush", verbosity=0, interactive=False, database=db_alias)
+        call_command("flush", verbosity=0, interactive=False, database=db_alias, allow_cascade=True)
 
 
 class DBTenantAPITestCase(BaseAPITestCase, DBTenantTestCase):

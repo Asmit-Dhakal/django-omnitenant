@@ -1,9 +1,4 @@
-from .testcases import (
-    DBTenantTestCase,
-    DBTenantAPITestCase,
-    SchemaTenantTestCase,
-    SchemaTenantAPITestCase,
-)
+from .testcases import DBTenantAPITestCase, DBTenantTestCase, SchemaTenantAPITestCase, SchemaTenantTestCase
 
 __all__ = [
     "DBTenantTestCase",
