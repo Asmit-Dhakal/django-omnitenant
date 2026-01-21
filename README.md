@@ -15,15 +15,15 @@
 
 ### Key Features
 
-✔ **Flexible Tenant Isolation** – Choose between database-per-tenant, schema-per-tenant, or hybrid isolation strategies(Coming soon...)
-✔ **Automatic Tenant Context** – Seamlessly switch between tenants with context managers
-✔ **Admin Restrictions** – Restrict admin access to tenant-specific models
-✔ **Tenant-Aware Middleware** – Automatically resolve tenants from HTTP requests
-✔ **Tenant-Aware Caching** – Cache keys prefixed with tenant IDs
-✔ **Tenant-Aware Celery** – Run Celery tasks in the context of a specific tenant
-✔ **Comprehensive CLI Tools** – Create, manage, and migrate tenants with ease
-✔ **Signal System** – Hook into tenant lifecycle events (creation, deletion, migration)
-✔ **Customizable Tenant Resolution** – Resolve tenants from subdomains, custom domains, or other sources
+- ✔ **Flexible Tenant Isolation** – Choose between database-per-tenant, schema-per-tenant, or hybrid isolation strategies(Coming soon...)
+- ✔ **Automatic Tenant Context** – Seamlessly switch between tenants with context managers
+- ✔ **Admin Restrictions** – Restrict admin access to tenant-specific models
+- ✔ **Tenant-Aware Middleware** – Automatically resolve tenants from HTTP requests
+- ✔ **Tenant-Aware Caching** – Cache keys prefixed with tenant IDs
+- ✔ **Tenant-Aware Celery** – Run Celery tasks in the context of a specific tenant
+- ✔ **Comprehensive CLI Tools** – Create, manage, and migrate tenants with ease
+- ✔ **Signal System** – Hook into tenant lifecycle events (creation, deletion, migration)
+- ✔ **Customizable Tenant Resolution** – Resolve tenants from subdomains, custom domains, or other sources
 
 ---
 
