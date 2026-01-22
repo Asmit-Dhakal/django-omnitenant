@@ -1,0 +1,64 @@
+site_name: Django Omnitenant Technical Documentation
+site_description: Django library for doing awesome things
+site_url: https://your-username.github.io/your-repo/
+
+repo_name: your-username/your-repo
+repo_url: https://github.com/your-username/your-repo
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+    - search.highlight
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [../..]
+          options:
+            show_symbol_type_heading: true
+            show_root_toc_entry: true
+            members: true
+            show_submodules: true
+            show_attribute_values: true
+            # -------------------
+            # Docstring control
+            # -------------------
+            show_docstring_attributes: true
+            show_docstring_parameters: true
+            show_docstring_returns: true
+            show_docstring_raises: true
+            show_docstring_examples: true
+
+            # -------------------
+            # Signature / Parameters
+            # -------------------
+            separate_signature: false
+            show_signature_type_parameters: true
+            parameter_headings: true
+            show_overloads: true
+            # -------------------
+  - awesome-pages
+
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.details
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Usage: usage.md
+  - API Reference:
+      - Core: api/core.md
+      - Admin: api/admin.md
+      - Models: api/models.md
+      - Backends: api/backends.md
+      - Resolvers: api/resolvers.md
+      - Patches: api/patches.md
+      - Management Commands: api/management.md

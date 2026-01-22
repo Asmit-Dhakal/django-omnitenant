@@ -40,7 +40,9 @@ class _WrappedSettings:
 
     @cached_property
     def PUBLIC_TENANT_NAME(self) -> str:
-        return self.OMNITENANT_CONFIG.get(constants.PUBLIC_TENANT_NAME, "public_omnitenant")
+        return self.OMNITENANT_CONFIG.get(
+            constants.PUBLIC_TENANT_NAME, "public_omnitenant"
+        )
 
     @cached_property
     def PUBLIC_DB_ALIAS(self) -> str:
