@@ -1,0 +1,105 @@
+/* Minimal Modern Styling */
+
+:root {
+  --hero-bg: linear-gradient(135deg, #099680 0%, #11b193 50%, #13c9a7 100%);
+  --hero-fg: #ffffff;
+  --btn-primary-bg: #099680;
+  --btn-secondary-bg: #343a40;
+}
+
+/* Hero section */
+.home-hero {
+  background: var(--hero-bg);
+  color: var(--hero-fg);
+  border-radius: 12px;
+  padding: 4rem 2rem;
+  margin: 1rem 0 2rem 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.home-hero .hero-content {
+  max-width: 960px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.home-hero h1 {
+  font-size: 2.6rem;
+  margin: 0 0 0.75rem 0;
+}
+
+.home-hero p {
+  font-size: 1.1rem;
+  opacity: 0.95;
+}
+
+.hero-cta {
+  margin-top: 1.25rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.65rem 1.1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.btn-primary {
+  background: var(--btn-primary-bg);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: var(--btn-secondary-bg);
+  color: #fff;
+}
+
+.btn-info {
+  background: var(--btn-secondary-bg);
+  color: #fff;
+}
+
+/* Grid cards */
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.home-grid .card {
+  background: var(--md-default-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 10px;
+  padding: 1rem;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.home-grid .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark mode harmony */
+[data-md-color-scheme="slate"] .home-hero {
+  --hero-bg: linear-gradient(135deg, #343a40 0%, #495057 50%, #212529 100%);
+  --hero-fg: #e9ecef;
+}
+
+[data-md-color-scheme="slate"] .home-grid .card {
+  background: var(--md-code-bg-color);
+  border-color: var(--md-default-fg-color--lighter);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

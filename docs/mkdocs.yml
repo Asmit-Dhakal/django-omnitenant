@@ -1,20 +1,44 @@
-site_name: Django Omnitenant Technical Documentation
-site_description: Django library for doing awesome things
-site_url: https://your-username.github.io/your-repo/
+site_name: Django Omnitenant
+site_description: Django library for multi tenancy
+site_url: https://github.com/RahulRimal/django-omnitenant/
 
-repo_name: your-username/your-repo
-repo_url: https://github.com/your-username/your-repo
+repo_name: RahulRimal/django-omnitenant
+repo_url: https://github.com/RahulRimal/django-omnitenant/
 
 theme:
   name: material
+  custom_dir: overrides
+  palette:
+    - scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
   features:
     - navigation.tabs
     - navigation.sections
+    - navigation.instant
+    - navigation.prune_nav_levels
+    - navigation.indexes
     - content.code.copy
+    - content.tabs.link
+    - search.suggest
     - search.highlight
+
+extra_css:
+  - assets/styles/custom.css
 
 plugins:
   - search
+  - toggle-sidebar
+
   - mkdocstrings:
       handlers:
         python:
@@ -23,6 +47,7 @@ plugins:
             show_symbol_type_heading: true
             show_root_toc_entry: true
             members: true
+            members_order: "source"
             show_submodules: true
             show_attribute_values: true
             # -------------------
@@ -55,10 +80,38 @@ nav:
   - Installation: installation.md
   - Usage: usage.md
   - API Reference:
-      - Core: api/core.md
-      - Admin: api/admin.md
-      - Models: api/models.md
-      - Backends: api/backends.md
-      - Resolvers: api/resolvers.md
-      - Patches: api/patches.md
-      - Management Commands: api/management.md
+      - Over: api/index.md
+      - Modules:
+          - Core:
+              - Constants: api/core/constants.md
+              - Exceptions: api/core/exceptions.md
+              - Middleware: api/core/middleware.md
+              - Signals: api/core/signals.md
+              - Tenant Context: api/core/tenant_context.md
+              - Utils: api/core/utils.md
+              - Validators: api/core/validators.md
+              - Configuration: api/core/conf.md
+              - Bootstrap: api/core/bootstrap.md
+          - Admin: api/admin.md
+          - Models: api/models.md
+          - Backends:
+              - Base: api/backends/base.md
+              - Cache Backend: api/backends/cache_backend.md
+              - Database Backend: api/backends/database_backend.md
+              - Schema Backend: api/backends/schema_backend.md
+              - PostgreSQL:
+                  - Base: api/backends/postgresql/base.md
+          - Resolvers:
+              - Base: api/resolvers/base.md
+              - Custom Domain Resolver: api/resolvers/customdomain_resolver.md
+              - Subdomain Resolver: api/resolvers/subdomain_resolver.md
+          - Patches:
+              - Cache Patch: api/patches/cache.md
+              - Celery Patch: api/patches/celery.md
+          - Management Commands:
+              - Create Tenant: api/management_commands/createtenant.md
+              - Create Tenant Superuser: api/management_commands/createtenantsuperuser.md
+              - Migrate Tenant: api/management_commands/migratetenant.md
+              - Migrate All Tenants: api/management_commands/migratealltenants.md
+              - Shell: api/management_commands/shell.md
+              - Show Tenants: api/management_commands/showtenants.md

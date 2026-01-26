@@ -1,9 +1,9 @@
 """Tenant context helpers.
 
 This module provides a thread-safe context for tracking the "current"
-tenant, database alias and cache alias using Python's :mod:`contextvars`.
+tenant, database alias and cache alias using Python's `contextvars`.
 
-It exposes the :class:`TenantContext` helper which maintains per-context
+It exposes the class:`TenantContext` helper which maintains per-context
 stacks for tenant, database alias and cache alias values and offers
 convenience context managers to temporarily switch to a tenant, the
 master database, a public schema, or an arbitrary schema.
