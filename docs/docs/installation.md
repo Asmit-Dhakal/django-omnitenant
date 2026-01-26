@@ -280,24 +280,22 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.admin',
-    
-    # Add django-omnitenant
-    'django_omnitenant',
-    
     # Your apps
     'myapp',
+
+    # Add django-omnitenant
+    'django_omnitenant',
 ]
 
 # Add middleware (early in list)
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Add tenant middleware
+    'django_omnitenant.middleware.TenantMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    
-    # Add tenant middleware
-    'django_omnitenant.middleware.TenantMiddleware',
     
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -684,4 +682,3 @@ For issues or questions:
 - **Documentation**: [Read the Docs](https://django-omnitenant.readthedocs.io/)
 - **GitHub Issues**: [Report Issues](https://github.com/RahulRimal/django-omnitenant/issues)
 - **Discussions**: [Join Discussions](https://github.com/RahulRimal/django-omnitenant/discussions)
-
