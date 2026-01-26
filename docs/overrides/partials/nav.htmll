@@ -1,6 +1,0 @@
-<div class="sidebar-banner">
-  <a href="/changelog/">New: v2.1 Released →</a>
-  <div class="theme-toggle">
-    <button id="themeToggle" aria-label="Toggle theme">Toggle Theme</button>
-  </div>
-</div>

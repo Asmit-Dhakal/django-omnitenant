@@ -103,3 +103,24 @@
     animation: none !important;
   }
 }
+
+
+.md-copyright--custom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  font-size: 0.75rem;
+}
+
+.md-copyright--custom a {
+  color: #ffffff;
+}
+
+.md-copyright__right {
+  text-align: right;
+}
