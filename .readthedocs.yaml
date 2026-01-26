@@ -4,6 +4,8 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
+  env:
+    DJANGO_SETTINGS_MODULE: docs.django_settings
 
 python:
   install:
