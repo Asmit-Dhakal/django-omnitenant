@@ -1,6 +1,6 @@
 site_name: Django Omnitenant
 site_description: Django library for multi tenancy
-site_url: https://github.com/RahulRimal/django-omnitenant/
+site_url: https://django-omnitenant.readthedocs.io/
 
 repo_name: RahulRimal/django-omnitenant
 repo_url: https://github.com/RahulRimal/django-omnitenant/
