@@ -42,7 +42,7 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          paths: [../..]
+          paths: [..]
           options:
             show_symbol_type_heading: true
             show_root_toc_entry: true
