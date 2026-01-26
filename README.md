@@ -67,6 +67,7 @@ Comprehensive CLI for tenant operations:
 - psycopg2-binary (for PostgreSQL support)
 
 Optional dependencies:
+
 - Celery (for async task support)
 - Redis (for distributed caching)
 
@@ -179,6 +180,7 @@ python manage.py createtenant
 ```
 
 The command will prompt for:
+
 - Tenant ID (unique identifier)
 - Tenant Name (display name)
 - Isolation Type (database or schema)
@@ -536,27 +538,32 @@ class MyTestCase(DBTenantTestCase):
 ### Key Classes and Functions
 
 #### Tenant Context
+
 - [`TenantContext`](docs/docs/api/core/tenant_context.md) - Manage tenant context
 - Methods: `get_tenant()`, `use_tenant()`, `use_master_db()`, `use_schema()`
 
 #### Models
+
 - [`BaseTenant`](docs/docs/api/models.md) - Abstract tenant model
 - [`BaseDomain`](docs/docs/api/models.md) - Abstract domain model
 - [`TenantQuerySetManager`](docs/docs/api/models.md) - Tenant-aware query manager
 
 #### Backends
+
 - [`BaseTenantBackend`](docs/docs/api/backends/base.md) - Abstract backend
 - [`DatabaseTenantBackend`](docs/docs/api/backends/database_backend.md) - Database isolation
 - [`SchemaTenantBackend`](docs/docs/api/backends/schema_backend.md) - Schema isolation
 - [`CacheTenantBackend`](docs/docs/api/backends/cache_backend.md) - Cache management
 
 #### Utilities
+
 - [`get_tenant_model()`](docs/docs/api/core/utils.md) - Get configured tenant model
 - [`get_domain_model()`](docs/docs/api/core/utils.md) - Get configured domain model
 - [`get_tenant_backend()`](docs/docs/api/core/utils.md) - Get backend for tenant
 - [`get_current_tenant()`](docs/docs/api/core/utils.md) - Get current tenant
 
 #### Exceptions
+
 - [`TenantNotFound`](docs/docs/api/core/exceptions.md) - Tenant resolution failed
 - [`DomainNotFound`](docs/docs/api/core/exceptions.md) - Domain resolution failed
 
@@ -696,9 +703,8 @@ See [CHANGELOG.md](CHANGELOG.md) for release notes and breaking changes.
 ## Roadmap
 
 - [ ] Hybrid isolation strategy (database + schema)
-- [ ] Tenant analytics dashboard
 - [ ] REST API for tenant management
-- [ ] GraphQL support
+- [ ] Tenant analytics dashboard
 - [ ] Performance monitoring tools
 - [ ] Multi-database support (MySQL, Oracle)
 
@@ -717,6 +723,7 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 ### Reporting Issues
 
 Please include:
+
 - Django version
 - Python version
 - Isolation strategy used
@@ -742,12 +749,6 @@ If you use django-omnitenant in your research, please cite:
 - Built for modern Django applications
 - Special thanks to the Django community
 
-## Related Projects
-
-- [django-tenant-schemas](https://github.com/tomturner/django-tenant-schemas) - Pioneering multi-tenant solution
-- [django-organizations](https://github.com/bennylope/django-organizations) - Organization support
-- [django-rest-framework](https://www.django-rest-framework.org/) - REST API framework
-
 ---
 
-**Made with ❤️ for the Django community**
+**Made with ❤️ by [Ajna Lab](https://ajnalab.com/) for the Django community**
