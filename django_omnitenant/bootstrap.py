@@ -215,8 +215,8 @@ class _BootStrapper:
             )
 
         # Step 4: Validate PUBLIC_HOST is configured
-        default_host: str = settings.OMNITENANT_CONFIG.get(constants.PUBLIC_HOST, "")
-        if not default_host:
+        public_host: str = settings.OMNITENANT_CONFIG.get(constants.PUBLIC_HOST, "")
+        if not public_host:
             raise ImproperlyConfigured(
                 f"OMNITENANT_CONFIG must define '{constants.PUBLIC_HOST}'. Example:\n"
                 f"OMNITENANT_CONFIG = {{ '{constants.PUBLIC_HOST}': 'localhost' }}"
