@@ -98,8 +98,8 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.admin',
     # ...
-    'django_omnitenant',
     'myapp',  # Your application
+    'django_omnitenant',
 ]
 ```
 
