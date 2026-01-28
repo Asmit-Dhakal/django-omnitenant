@@ -356,7 +356,7 @@ class DatabaseTenantBackend(BaseTenantBackend):
             Typically invoked via Django management command:
             ```bash
             python manage.py migratetenant acme
-            python manage.py migratealltenants
+            python manage.py migratetenants
             ```
             
         Workflow:
@@ -374,7 +374,7 @@ class DatabaseTenantBackend(BaseTenantBackend):
             
         See Also:
             - create(): Provision database and optionally migrate
-            - management commands: migratetenant, migratealltenants
+            - management commands: migratetenant, migratetenants
             - tenant_migrated signal: For post-migration handlers
         """
         # Get the database alias for this tenant

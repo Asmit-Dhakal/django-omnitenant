@@ -369,7 +369,7 @@ class BaseTenantBackend:
 
             ```bash
             python manage.py migratetenant acme
-            python manage.py migratealltenants
+            python manage.py migratetenants
             ```
 
         Custom Migration Logic:
@@ -407,7 +407,7 @@ class BaseTenantBackend:
 
         See Also:
             - create(): Provision and optionally migrate
-            - management commands: migratetenant, migratealltenants
+            - management commands: migratetenant, migratetenants
             - tenant_migrated signal: For post-migration handlers
         """
         # Emit tenant_migrated signal to notify listeners

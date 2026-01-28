@@ -7,14 +7,14 @@ Purpose:
     Extends Django's migrate command to work with multi-tenant architecture, allowing
     execution of database schema migrations for a specific tenant. Essential for updating
     tenant's database schema when application models change.
-    
+
 Key Features:
     - Requires --tenant-id argument to specify target tenant
     - Validates tenant exists before running migrations
     - Uses tenant-specific backend to execute migrations
     - Proper error handling and user feedback
     - Works with all tenant isolation types (database, schema, cache)
-    
+
 Tenant Isolation Context:
     Migrations executed within tenant context means:
     - For database-per-tenant: Migrates tenant's specific database
@@ -22,22 +22,22 @@ Tenant Isolation Context:
     - For row-level isolation: Migrations run on shared database
     - All models use tenant's connection/schema automatically
     - Proper isolation ensures schema consistency per tenant
-    
+
 Usage:
     ```bash
     # Migrate specific tenant to latest
     python manage.py migratetenant --tenant-id=acme
-    
+
     # Migrate specific app for tenant
     python manage.py migratetenant --tenant-id=acme app_name
-    
+
     # Migrate to specific migration
     python manage.py migratetenant --tenant-id=acme app_name 0002_auto
-    
+
     # Show migration plan without executing
     python manage.py migratetenant --tenant-id=acme --plan
     ```
-    
+
 Supported Django Arguments:
     - app_label: Migrate specific app (optional)
     - migration_name: Migrate to specific migration (optional)
@@ -45,7 +45,7 @@ Supported Django Arguments:
     - --verbosity: Control output verbosity (0-3)
     - --no-color: Disable colored output
     - Any other migrate argument
-    
+
 Command Flow:
     1. Parse and extract --tenant-id argument (required)
     2. Retrieve Tenant model from settings
@@ -54,7 +54,7 @@ Command Flow:
     5. Call backend.migrate() with tenant context
     6. Backend applies migrations to tenant's database/schema
     7. Output success or error messages
-    
+
 Error Handling:
     - CommandError if --tenant-id not provided
     - CommandError if tenant doesn't exist
@@ -63,7 +63,7 @@ Error Handling:
     - Backend handles database/schema-specific errors
 
 Related:
-    - migratealltenants: Migrate all tenants at once
+    - migratetenants: Migrate all tenants at once
     - createtenant: Create new tenant (needs initial migration)
     - Django's migrate: Parent concept
     - TenantBackend: Handles migration execution per tenant
@@ -76,28 +76,27 @@ from django_omnitenant.utils import get_tenant_backend
 
 
 class Command(BaseCommand):
-class Command(BaseCommand):
     """
     Management command for running migrations on a specific tenant.
-    
+
     This command extends the Django migrate command to support multi-tenant deployments
     where each tenant may have separate databases or schemas. It wraps the migration
     process to ensure migrations are executed in the proper tenant context.
-    
+
     Inheritance:
         Inherits from django.core.management.base.BaseCommand, the base Django
         management command class.
-    
+
     Key Functionality:
         - Accepts --tenant-id (required) to specify which tenant to migrate
         - Validates tenant exists before attempting migrations
         - Uses TenantBackend to execute migrations in tenant context
         - Handles database/schema-specific migration logic
         - Provides proper error messages for troubleshooting
-    
+
     Attributes:
         help (str): Help text shown in management command listing
-    
+
     Usage Examples:
         Migrate all pending migrations for tenant:
         ```bash
@@ -107,7 +106,7 @@ class Command(BaseCommand):
         Applying app1.0002_add_field... OK
         Migrations completed successfully for tenant 'acme'.
         ```
-        
+
         Migrate specific app:
         ```bash
         $ python manage.py migratetenant --tenant-id=beta app1
@@ -115,7 +114,7 @@ class Command(BaseCommand):
         Applying app1.0003_alter_model... OK
         Migrations completed successfully for tenant 'beta'.
         ```
-        
+
         Show migration plan without executing:
         ```bash
         $ python manage.py migratetenant --tenant-id=gamma --plan
@@ -124,13 +123,14 @@ class Command(BaseCommand):
         - Apply app1.0001_initial
         - Apply app1.0002_add_field
         ```
-    
+
     Notes:
         - Each tenant can have independent migration state
         - Migration files are shared, but state tracked per tenant
         - Backend handles database/schema routing automatically
         - Essential after deploying application changes to production
     """
+
     help = "Run migrations for a single tenant."
 
     def add_arguments(self, parser):
@@ -148,9 +148,11 @@ class Command(BaseCommand):
                 If not provided, CommandError is raised. Must reference an existing tenant
                 or CommandError is raised in handle().
         
-        Django Arguments Inherited (from migrate command):
+        Positional Arguments:
             app_label: App to migrate (optional, migrates all if not specified)
             migration_name: Specific migration to target (optional)
+        
+        Django Arguments Inherited (from migrate command):
             --plan: Show migration plan without executing
             --verbosity: Output verbosity (0=silent, 1=normal, 2=verbose, 3=debug)
             --no-color: Disable colored output
@@ -166,6 +168,9 @@ class Command(BaseCommand):
             
             # With app filter
             $ manage.py migratetenant --tenant-id=acme users
+            
+            # With app and migration
+            $ manage.py migratetenant --tenant-id=acme hrms 002
             
             # With verbosity
             $ manage.py migratetenant --tenant-id=acme --verbosity=2
@@ -189,14 +194,27 @@ class Command(BaseCommand):
         parser.add_argument(
             "--tenant-id",
             help="Identifier of the tenant to migrate. "
-                 "Required when running this command directly. "
-                 "Must be an existing tenant or CommandError will be raised.",
+            "Required when running this command directly. "
+            "Must be an existing tenant or CommandError will be raised.",
+        )
+
+        # Add positional arguments for app_label and migration_name
+        parser.add_argument(
+            "app_label",
+            nargs="?",
+            help="App label of the application to migrate.",
+        )
+
+        parser.add_argument(
+            "migration_name",
+            nargs="?",
+            help='Target migration name (e.g., "0002" or "0002_auto").',
         )
 
     def handle(self, *args, **options):
         """
         Execute database migrations for the specified tenant.
-        
+
         This method performs the following steps:
         1. Extracts and validates the --tenant-id argument
         2. Retrieves the Tenant model
@@ -204,66 +222,72 @@ class Command(BaseCommand):
         4. Gets the tenant-specific backend
         5. Calls backend.migrate() to execute migrations
         6. Reports success or failure to user
-        
+
         All migrations are executed within proper tenant context, ensuring that
         schema/database-specific operations target the correct tenant's infrastructure.
-        
+
         Arguments:
             *args: Positional arguments passed to Django's migrate command
                    May include app_label or migration_name
             **options (dict): Command options including:
                 - tenant_id (str): Tenant identifier (extracted in this method)
+                - app_label (str): Optional app to migrate
+                - migration_name (str): Optional specific migration
                 - verbosity (int): Output verbosity level (default 1)
                 - no_color (bool): Whether to disable colored output
                 - plan (bool): If True, show plan but don't execute
                 - [other migrate options]: Passed to parent migrate command
-        
+
         Returns:
             None: Django management commands don't return values. Output via stdout/stderr.
-        
+
         Process Flow:
             ```
             1. Extract tenant_id from options
                 tenant_id = options.pop('tenant_id', None)
                 # 'tenant_id': 'acme' or None
-            
-            2. Validate tenant_id was provided
+
+            2. Extract app_label and migration_name
+                app_label = options.pop('app_label', None)
+                migration_name = options.pop('migration_name', None)
+
+            3. Validate tenant_id was provided
                 if not tenant_id:
                     raise CommandError('--tenant-id is required...')
                 # Prevents accidental global migration
-            
-            3. Get Tenant model class
+
+            4. Get Tenant model class
                 Tenant = get_tenant_model()  # e.g., CustomTenant
-            
-            4. Query for tenant
+
+            5. Query for tenant
                 tenant = Tenant.objects.get(tenant_id=tenant_id)
                 # Raises Tenant.DoesNotExist if not found
-            
-            5. Confirm to user
+
+            6. Confirm to user
                 self.stdout.write(
                     self.style.SUCCESS(f'Running migrations for tenant: {tenant}')
                 )
-            
-            6. Get backend for this tenant
+
+            7. Get backend for this tenant
                 backend = get_tenant_backend(tenant)
                 # Backend knows how to access tenant's database/schema
-            
-            7. Execute migrations via backend
-                backend.migrate(*args, **options)
+
+            8. Execute migrations via backend
+                backend.migrate(app_label, migration_name, **options)
                 # Migrations applied to tenant's infrastructure
-            
-            8. Output success
+
+            9. Output success
                 self.stdout.write(
                     self.style.SUCCESS('Migrations completed successfully...')
                 )
-            
-            9. On error: catch and display error
+
+            10. On error: catch and display error
                 except Exception as e:
                     self.stdout.write(
                         self.style.ERROR(f'Migrations failed for tenant...: {e}')
                     )
             ```
-        
+
         Usage Examples:
             Migrate tenant with ID 'acme':
             ```bash
@@ -278,7 +302,24 @@ class Command(BaseCommand):
               ...
             Migrations completed successfully for tenant 'acme'.
             ```
-            
+
+            Migrate specific app:
+            ```bash
+            $ python manage.py migratetenant --tenant-id=swastik hrms
+            Running migrations for tenant: Swastik
+            Applying hrms.0001_initial... OK
+            Applying hrms.0002_add_field... OK
+            Migrations completed successfully for tenant 'swastik'.
+            ```
+
+            Migrate to specific migration:
+            ```bash
+            $ python manage.py migratetenant --tenant-id=swastik hrms 002
+            Running migrations for tenant: Swastik
+            Applying hrms.0002_add_field... OK
+            Migrations completed successfully for tenant 'swastik'.
+            ```
+
             Show migration plan:
             ```bash
             $ python manage.py migratetenant --tenant-id=beta --plan
@@ -289,7 +330,7 @@ class Command(BaseCommand):
                 app2.0005_new_feature
             Migrations completed successfully for tenant 'beta'.
             ```
-            
+
             Verbose output:
             ```bash
             $ python manage.py migratetenant --tenant-id=gamma --verbosity=2
@@ -303,36 +344,36 @@ class Command(BaseCommand):
               ...
             Migrations completed successfully for tenant 'gamma'.
             ```
-        
+
         Error Handling:
-            
+
             Case 1: --tenant-id not provided
             ```bash
             $ python manage.py migratetenant
             # CommandError: --tenant-id is required when running migrate_tenant directly.
             ```
-            
+
             Case 2: Tenant doesn't exist
             ```bash
             $ python manage.py migratetenant --tenant-id=nonexistent
             # CommandError: Tenant 'nonexistent' does not exist.
             #   Please create one with the tenant id 'nonexistent' first.
             ```
-            
+
             Case 3: Migration error (e.g., syntax error in migration file)
             ```bash
             $ python manage.py migratetenant --tenant-id=acme
             Running migrations for tenant: ACME Corporation
             Migrations failed for tenant 'acme': [error details]
             ```
-            
+
             Case 4: Database connection error
             ```bash
             $ python manage.py migratetenant --tenant-id=acme
             Running migrations for tenant: ACME Corporation
             Migrations failed for tenant 'acme': could not connect to server
             ```
-        
+
         Context Management:
             The backend.migrate() call handles tenant context management:
             - Database-per-tenant: Connects to tenant's specific database
@@ -340,7 +381,7 @@ class Command(BaseCommand):
             - Row-level isolation: Runs on shared database with row-level filters
             - All ORM queries automatically scoped to tenant
             - No explicit context management needed in this method
-        
+
         Notes:
             - Tenant validation prevents migrating non-existent tenants
             - Each tenant's migration state tracked independently
@@ -348,7 +389,7 @@ class Command(BaseCommand):
             - Failed migrations don't affect other tenants
             - Rolling back specific tenant requires manual intervention
             - Check --plan before executing on production
-        
+
         Integration Points:
             - Calls get_tenant_model(): Gets configured Tenant model
             - Calls get_tenant_backend(): Gets tenant-specific backend instance
@@ -358,7 +399,11 @@ class Command(BaseCommand):
         """
         # Extract tenant_id from options and remove it (backend doesn't know this arg)
         tenant_id = options.pop("tenant_id", None)
-        
+
+        # Extract app_label and migration_name from options
+        app_label = options.pop("app_label", None)
+        migration_name = options.pop("migration_name", None)
+
         # Get the Tenant model class (can be customized via settings)
         Tenant = get_tenant_model()
 
@@ -366,7 +411,7 @@ class Command(BaseCommand):
         if not tenant_id:
             raise CommandError(
                 "--tenant-id is required when running migrate_tenant directly. "
-                "Usage: python manage.py migratetenant --tenant-id=<tenant_id>"
+                "Usage: python manage.py migratetenant --tenant-id=<tenant_id> [app_label] [migration_name]"
             )
 
         # Validate that tenant exists before attempting migrations
@@ -380,28 +425,30 @@ class Command(BaseCommand):
             )
 
         # Confirm to user which tenant we're migrating (good UX, prevents mistakes)
+        migration_target = f" (app: {app_label}" + (f", migration: {migration_name})" if migration_name else ")")
         self.stdout.write(
-            self.style.SUCCESS(f"Running migrations for tenant: {tenant}")
+            self.style.SUCCESS(f"Running migrations for tenant: {tenant}" + (migration_target if app_label else ""))
         )
 
         # Execute migrations within tenant context
         try:
             # Get the backend that knows how to access this tenant's database/schema
             backend = get_tenant_backend(tenant)
-            
+
             # Call backend.migrate() to execute migrations in tenant context
             # Backend handles database selection, schema setting, etc.
-            backend.migrate(*args, **options)
-            
+            # Pass app_label and migration_name as positional args if provided
+            if app_label:
+                if migration_name:
+                    backend.migrate(app_label, migration_name, **options)
+                else:
+                    backend.migrate(app_label, **options)
+            else:
+                backend.migrate(**options)
+
             # On success, confirm completion to user
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"Migrations completed successfully for tenant '{tenant_id}'."
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"Migrations completed successfully for tenant '{tenant_id}'."))
         except Exception as e:
             # On failure, output error message with details
             # Don't re-raise - allow other tenants to migrate even if one fails
-            self.stdout.write(
-                self.style.ERROR(f"Migrations failed for tenant '{tenant_id}': {e}")
-            )
+            self.stdout.write(self.style.ERROR(f"Migrations failed for tenant '{tenant_id}': {e}"))

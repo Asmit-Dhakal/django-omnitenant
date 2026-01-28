@@ -473,7 +473,7 @@ class SchemaTenantBackend(BaseTenantBackend):
             Typically invoked via Django command:
             ```bash
             python manage.py migratetenant acme
-            python manage.py migratealltenants
+            python manage.py migratetenants
             ```
             
         Performance:
