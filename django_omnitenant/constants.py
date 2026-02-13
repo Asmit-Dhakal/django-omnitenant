@@ -198,6 +198,27 @@ class _Constants:
             # e.g., "public"
         """
         return "PUBLIC_TENANT_NAME"
+    
+    @cached_property
+    def TEST_TENANT_NAME(self) -> str:
+        """
+        Configuration key for the test tenant identifier.
+
+        Specifies the name/identifier of the test tenant which contains
+        data for the testing.
+
+        Returns:
+            str: Setting key "TEST_TENANT_NAME"
+
+        Usage:
+            from django.conf import settings
+            from django_omnitenant.constants import constants
+
+            test_tenant_name = settings.OMNITENANT_CONFIG[constants.TEST_TENANT_NAME]
+            # e.g., "public"
+        """
+        return "TEST_TENANT_NAME"
+
 
     @cached_property
     def MASTER_TENANT_NAME(self) -> str:

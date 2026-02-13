@@ -75,6 +75,9 @@ class TenantQuerySetManager(models.Manager):
         tenant = get_current_tenant()
         if not tenant:
             return
+        
+        if tenant.tenant_id == settings.TEST_TENANT_NAME:
+            return
 
         # By default, models are tenant-managed unless explicitly marked
         if not getattr(self.model, "master_managed", False) and not getattr(

@@ -437,6 +437,38 @@ class _WrappedSettings:
         return self.OMNITENANT_CONFIG.get(
             constants.PUBLIC_TENANT_NAME, "public_omnitenant"
         )
+    
+    @cached_property
+    def TEST_TENANT_NAME(self) -> str:
+        """
+        Get the identifier of the test tenant.
+        
+        The test tenant will contain the test data and is used for
+        running tests.
+        
+        Returns:
+            str: Test tenant identifier/name
+            
+        Default:
+            'omitenant_test_tenant'
+            
+        Configuration Key:
+            Uses the constant: constants.TEST_TENANT_NAME = "TEST_TENANT_NAME"
+            Location: OMNITENANT_CONFIG['TEST_TENANT_NAME']
+            
+        Configuration Example:
+            ```python
+            OMNITENANT_CONFIG = {
+                'TEST_TENANT_NAME': 'test_tenant',
+            }
+            ```
+            
+        Use Cases:
+            Accessing shared content accessible during the tests
+        """
+        return self.OMNITENANT_CONFIG.get(
+            constants.TEST_TENANT_NAME, "omitenant_test_tenant",
+        )
 
     @cached_property
     def PUBLIC_DB_ALIAS(self) -> str:
