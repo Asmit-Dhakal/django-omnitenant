@@ -233,6 +233,22 @@ class Command(BaseCommand):
             help='Target migration name (e.g., "0002", "0002_auto", or "zero").',
         )
 
+        parser.add_argument(
+            "--fake",
+            action="store_true",
+            help="Mark migrations as run without actually running them.",
+        )
+
+        parser.add_argument(
+            "--fake-initial",
+            action="store_true",
+            help=(
+                "Detect if tables already exist and fake-apply initial migrations if so. "
+                "Make sure that the current database schema matches your initial migration "
+                "before using this flag."
+            ),
+        )
+
     def handle(self, *args, **options):
         """
         Execute database migrations for all tenants.

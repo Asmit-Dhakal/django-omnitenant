@@ -64,9 +64,15 @@ class _BootStrapper:
         # These are always applied unless explicitly removed
         self._patches: list[str] = [
             "django_omnitenant.patches.cache",
-            "django_omnitenant.patches.celery",
             "django_omnitenant.patches.settings",
         ]
+
+        try:
+            import celery  # noqa: F401
+
+            self._patches.append("django_omnitenant.patches.celery")
+        except ImportError:
+            pass
 
     def _parse(self):
         """
@@ -191,7 +197,9 @@ class _BootStrapper:
             ```
         """
         # Step 1: Validate TENANT_MODEL is configured
-        tenant_model_path: str = settings.OMNITENANT_CONFIG.get(constants.TENANT_MODEL, "")
+        tenant_model_path: str = settings.OMNITENANT_CONFIG.get(
+            constants.TENANT_MODEL, ""
+        )
         if not tenant_model_path:
             raise ImproperlyConfigured(
                 f"OMNITENANT_CONFIG must define '{constants.TENANT_MODEL}'. Example:\n"
@@ -209,7 +217,9 @@ class _BootStrapper:
 
         # Step 3: Verify the tenant model is actually a Django Model
         if not issubclass(model, Model):
-            raise ImproperlyConfigured(f"{tenant_model_path} is not a valid Django model.")
+            raise ImproperlyConfigured(
+                f"{tenant_model_path} is not a valid Django model."
+            )
 
         # Step 4: Validate PUBLIC_HOST is configured
         public_host: str = settings.OMNITENANT_CONFIG.get(constants.PUBLIC_HOST, "")
@@ -291,7 +301,9 @@ class _BootStrapper:
             except Exception as e:
                 # If import fails, provide helpful error message
                 raise Exception(
-                    "Unable to import patch module {patch} due to: {exc_info}".format(patch=patch, exc_info=e)
+                    "Unable to import patch module {patch} due to: {exc_info}".format(
+                        patch=patch, exc_info=e
+                    )
                 )
 
     def run(self):

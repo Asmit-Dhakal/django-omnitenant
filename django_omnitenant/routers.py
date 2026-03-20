@@ -65,10 +65,7 @@ class TenantRouter:
         is_master_db = db == settings.MASTER_DB_ALIAS
 
         connection = connections[db]
-        # Check if the connection is currently set to a specific tenant schema
-        # In django-omnitenant, this is usually managed via the 'options' in settings
-        search_path = connection.settings_dict.get("OPTIONS", {}).get("options", "")
-        is_public_schema = settings.DEFAULT_SCHEMA_NAME in search_path or "search_path" not in search_path
+        is_public_schema = getattr(connection, '_current_schema', 'public') == 'public'
 
         # 4. Routing Logic Matrix
         if scope == TenantScope.MASTER:

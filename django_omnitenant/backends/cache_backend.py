@@ -87,6 +87,7 @@ Related:
 from django_omnitenant.conf import settings
 from requests.structures import CaseInsensitiveDict
 
+from django_omnitenant.models import BaseTenant
 from django_omnitenant.tenant_context import TenantContext
 
 
@@ -168,9 +169,24 @@ class CacheTenantBackend:
         self.tenant = tenant
         # Extract cache configuration from tenant config, defaulting to empty dict
         # CaseInsensitiveDict allows flexible lookups regardless of key casing
-        self.cache_config: CaseInsensitiveDict = CaseInsensitiveDict(
-            self.tenant.config.get("cache_config", {})
-        )
+        self.cache_config: CaseInsensitiveDict = CaseInsensitiveDict(self.tenant.config.get("cache_config", {}))
+
+    @staticmethod
+    def _get_cache_location(tenant, base_location):
+        return base_location
+        if redis_index := tenant.config.get("cache_config", {}).get("redis_db_index"):
+            return f"redis://{base_location}/{redis_index}"
+        assigned_dbs = BaseTenant.objects.values_list("redis_db_index", flat=True)
+
+        # Standard Redis limit is 0-15 (check your redis.conf 'databases' setting)
+        MAX_REDIS_DBS = 16
+
+        for i in range(1, MAX_REDIS_DBS):
+            if i not in assigned_dbs:
+                # return i
+                return base_location
+
+        raise Exception("No available Redis databases left on this instance!")
 
     @classmethod
     def get_alias_and_config(cls, tenant):
@@ -309,13 +325,12 @@ class CacheTenantBackend:
             # BACKEND: Cache backend implementation to use
             # Defaults to django_redis.cache.RedisCache if not specified
             # Can be any Django cache backend or custom implementation
-            "BACKEND": cache_config.get("BACKEND")
-            or base_config.get("BACKEND", "django_redis.cache.RedisCache"),
+            "BACKEND": cache_config.get("BACKEND") or base_config.get("BACKEND", "django_redis.cache.RedisCache"),
             # LOCATION: Where the cache stores data
             # For Redis: "redis://host:port/db" or "unix:///tmp/redis.sock"
             # For Memcache: "127.0.0.1:11211"
             # For LocMem: "unique-string"
-            "LOCATION": cache_config.get("LOCATION") or base_config.get("LOCATION"),
+            "LOCATION": cache_config.get("LOCATION") or cls._get_cache_location(tenant, base_config.get("LOCATION")),
             # TIMEOUT: Default cache timeout in seconds
             # 86400 = 24 hours
             # Can be overridden per key with cache.set(key, value, timeout=X)
