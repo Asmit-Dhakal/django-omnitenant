@@ -128,7 +128,8 @@ app_names = get_custom_apps()
 # ``_TenantRestrictAdminMixin``. This keeps the original ModelAdmin
 # behavior while adding the master-only restriction.
 for app_name in app_names:
-    app_config = apps.get_app_config(app_name)
+    app_config = apps.get_app_config(app_name.rsplit(".", 1)[-1])
+
     is_app_master_managed = getattr(app_config, "master_managed", False)
 
     for model in app_config.get_models():
