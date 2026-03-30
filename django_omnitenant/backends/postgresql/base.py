@@ -198,8 +198,7 @@ class DatabaseWrapper(PostgresDatabaseWrapper):
         super().__init__(*args, **kwargs)
         # Initialize schema tracking to the public/default tenant
         # This is the schema used for non-tenant-specific connections
-        self._current_schema = settings.PUBLIC_TENANT_NAME
-        # Alternative: self._current_schema = "public"  # Direct hardcoding
+        self._current_schema = "public"
 
     def set_schema(self, schema_name):
         """
